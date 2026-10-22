@@ -1,0 +1,177 @@
+// "Chế độ demo": người phỏng vấn theo kịch bản + chấm điểm theo quy tắc.
+// Dùng khi chưa cấu hình API key, hoặc khi cần trình chiếu không có mạng.
+import { QUESTIONS, SITUATION_CHANGES, PERSONAS, TOPICS } from '../data/content.js'
+
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
+const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5)
+const words = (t) => (t.trim() ? t.trim().split(/\s+/).length : 0)
+const clamp = (n) => Math.max(1, Math.min(10, Math.round(n)))
+
+const FOLLOW_UPS = {
+  specific: {
+    vi: 'Bạn có thể nói cụ thể hơn không? Chính bạn đã làm phần nào?',
+    en: 'Could you be more specific? What exactly did you do yourself?'
+  },
+  result: {
+    vi: 'Kết quả cuối cùng ra sao? Có con số hay minh chứng cụ thể nào không?',
+    en: 'What was the final result? Any numbers or concrete evidence?'
+  },
+  example: {
+    vi: 'Em lấy một ví dụ cụ thể từ dự án em đã làm được không?',
+    en: 'Can you give a concrete example from a project you worked on?'
+  },
+  shorten: {
+    vi: 'Em tóm lại ý chính trong hai câu giúp chị.',
+    en: 'Please sum up your main point in two sentences.'
+  }
+}
+
+const CLOSING = {
+  vi: 'Cảm ơn bạn đã tham gia buổi phỏng vấn. Nhận xét chi tiết sẽ hiện ngay sau đây.',
+  en: 'Thank you for your time. Your detailed feedback is coming up next.'
+}
+
+const RESULT_WORDS = ['kết quả', 'cuối cùng', 'hoàn thành', 'tăng', 'giảm', 'nhờ đó', 'bài học', '%', 'result', 'finally', 'increased', 'reduced', 'achieved', 'completed', 'learned']
+const EXAMPLE_WORDS = ['ví dụ', 'chẳng hạn', 'như là', 'example', 'for instance', 'such as']
+
+export function createMockSession(ctx) {
+  const topic = TOPICS.find((t) => t.id === ctx.topicId)
+  const ids = shuffle(topic.questionIds).slice(0, topic.take)
+  const plan = ids.map((id) => ({ ...QUESTIONS[id], id, kind: id.startsWith('t') ? 'tech' : 'behavior' }))
+  if (topic.situationChange) plan.push({ ...pick(SITUATION_CHANGES), id: 'sc', kind: 'situation' })
+  return { ctx, plan, index: 0, followUpAsked: false, answers: plan.map(() => []) }
+}
+
+function needsFollowUp(session, answer) {
+  const q = session.plan[session.index]
+  const n = words(answer)
+  const lower = answer.toLowerCase()
+  const persona = session.ctx.personaId
+  if (n < 25) return 'specific'
+  if (persona === 'manager' && n > 150) return 'shorten'
+  if (q.kind === 'tech' && persona === 'techlead' && !EXAMPLE_WORDS.some((w) => lower.includes(w))) return 'example'
+  if (q.kind !== 'tech' && !RESULT_WORDS.some((w) => lower.includes(w))) return 'result'
+  return null
+}
+
+// Trả về danh sách tin nhắn mở đầu.
+export function mockStart(session) {
+  const lang = session.ctx.language
+  const persona = PERSONAS[session.ctx.personaId]
+  const q = session.plan[0]
+  return [
+    { role: 'interviewer', kind: 'intro', text: persona.intro[lang] },
+    { role: 'interviewer', kind: q.kind === 'situation' ? 'situation' : 'question', text: q[lang], ask: true }
+  ]
+}
+
+// Nhận câu trả lời, trả về { messages, done }.
+export function mockReply(session, answer, timedOut) {
+  const lang = session.ctx.language
+  const persona = PERSONAS[session.ctx.personaId]
+  session.answers[session.index].push({ text: answer, timedOut })
+
+  if (!session.followUpAsked && !timedOut) {
+    const reason = needsFollowUp(session, answer)
+    if (reason) {
+      session.followUpAsked = true
+      return { done: false, messages: [{ role: 'interviewer', kind: 'followup', text: FOLLOW_UPS[reason][lang], ask: true }] }
+    }
+  }
+
+  session.index += 1
+  session.followUpAsked = false
+  if (session.index >= session.plan.length) {
+    return { done: true, messages: [{ role: 'interviewer', kind: 'closing', text: CLOSING[lang] }] }
+  }
+  const q = session.plan[session.index]
+  return {
+    done: false,
+    messages: [
+      { role: 'interviewer', kind: 'ack', text: pick(persona.ack[lang]) },
+      { role: 'interviewer', kind: q.kind === 'situation' ? 'situation' : 'question', text: q[lang], ask: true }
+    ]
+  }
+}
+
+// ---------- Chấm điểm theo quy tắc ----------
+const FILLERS = ['thì là', 'kiểu như', 'kiểu là', 'ừm', 'ờ ', 'nói chung là', ' um ', ' uh ', ' like ']
+const STAR = [
+  ['bối cảnh', 'khi ', 'lúc ', 'hồi ', 'trong dự án', 'học kỳ', 'situation', 'when ', 'during'],
+  ['nhiệm vụ', 'phụ trách', 'yêu cầu', 'mục tiêu', 'cần ', 'task', 'goal', 'responsible'],
+  ['em đã', 'mình đã', 'tôi đã', 'đã làm', 'em làm', 'quyết định', 'i did', 'i built', 'i implemented', 'i decided', 'i '],
+  RESULT_WORDS
+]
+const TECH = [
+  [' là ', 'nghĩa là', 'dùng để', ' is ', 'means', 'used to'],
+  EXAMPLE_WORDS,
+  ['so với', 'khác', 'ưu điểm', 'nhược điểm', 'đánh đổi', 'trade-off', 'compared', 'whereas', 'however', 'nhưng']
+]
+const CONNECTORS = ['đầu tiên', 'thứ nhất', 'thứ hai', 'sau đó', 'tiếp theo', 'cuối cùng', 'first', 'second', 'then', 'next', 'finally']
+
+function scoreAnswer(q, text, timedOut) {
+  const lower = ` ${text.toLowerCase()} `
+  const n = words(text)
+  const strengths = []
+  const improvements = []
+
+  // Relevance
+  const hit = q.kw.filter((k) => lower.includes(k))
+  let relevance = clamp(3 + hit.length * 1.5)
+  if (n < 10) relevance = Math.min(relevance, 3)
+  if (relevance >= 7) strengths.push('Bám sát câu hỏi, đề cập đúng các ý chính.')
+  else {
+    const missing = q.kw.filter((k) => !lower.includes(k)).slice(0, 4)
+    improvements.push(`Câu trả lời chưa chạm đủ ý chính. Nên nhắc tới: ${missing.join(', ')}.`)
+  }
+
+  // Clarity
+  let clarity = 10
+  const sentences = text.split(/[.!?…]+/).filter((s) => s.trim()).length || 1
+  const avgLen = n / sentences
+  const fillerCount = FILLERS.filter((f) => lower.includes(f)).length
+  if (n < 25) { clarity -= 4; improvements.push('Câu trả lời quá ngắn, nhà tuyển dụng khó đánh giá năng lực của bạn.') }
+  else if (n < 40) clarity -= 1
+  if (n > 220) { clarity -= 3; improvements.push('Câu trả lời khá dài. Hãy nói ý chính trước rồi mới giải thích.') }
+  if (avgLen > 35) { clarity -= 2; improvements.push('Câu văn quá dài, nên tách thành nhiều câu ngắn.') }
+  if (fillerCount) { clarity -= Math.min(3, fillerCount); improvements.push('Hạn chế các từ đệm như "thì là", "kiểu như".') }
+  if (timedOut) { clarity -= 1; improvements.push('Bạn chưa hoàn thành câu trả lời trong thời gian giới hạn.') }
+  clarity = clamp(clarity)
+  if (clarity >= 7) strengths.push('Độ dài hợp lý, diễn đạt dễ theo dõi.')
+
+  // Structure
+  const starHits = STAR.filter((g) => g.some((w) => lower.includes(w))).length
+  const techHits = TECH.filter((g) => g.some((w) => lower.includes(w))).length
+  const connector = CONNECTORS.some((w) => lower.includes(w)) ? 1 : 0
+  const structure = q.kind === 'tech'
+    ? clamp(2 + techHits * 2.5 + connector)
+    : clamp(2 + starHits * 2 + connector)
+  if (structure >= 7) strengths.push('Câu trả lời có cấu trúc rõ ràng.')
+  else improvements.push(q.kind === 'tech'
+    ? 'Nên trả lời theo khung: định nghĩa → ví dụ → so sánh, đánh đổi.'
+    : 'Nên sắp xếp theo STAR: bối cảnh → nhiệm vụ → hành động → kết quả.')
+
+  if (!strengths.length) strengths.push('Bạn đã hoàn thành câu trả lời, đây là bước đầu tốt để luyện tiếp.')
+  return { relevance, clarity, structure, strengths, improvements }
+}
+
+export function mockEvaluate(session) {
+  const lang = session.ctx.language
+  const answers = session.plan.map((q, i) => {
+    const parts = session.answers[i]
+    const text = parts.map((p) => p.text).join(' ')
+    const timedOut = parts.some((p) => p.timedOut)
+    return { question: q[lang], answer: text, timedOut, better: q.outline, ...scoreAnswer(q, text, timedOut) }
+  })
+  return finalize(answers, null, 'demo')
+}
+
+export function finalize(answers, summary, mode) {
+  const avgOf = (k) => answers.reduce((s, a) => s + a[k], 0) / (answers.length || 1)
+  const overall = { relevance: avgOf('relevance'), clarity: avgOf('clarity'), structure: avgOf('structure') }
+  overall.avg = (overall.relevance + overall.clarity + overall.structure) / 3
+  const weakest = Object.entries({ Relevance: overall.relevance, Clarity: overall.clarity, Structure: overall.structure })
+    .sort((a, b) => a[1] - b[1])[0][0]
+  const text = summary || `Điểm trung bình ${overall.avg.toFixed(1)}/10. Tiêu chí cần ưu tiên cải thiện: ${weakest}. Hãy xem gợi ý ở từng câu và luyện lại chủ đề này.`
+  return { answers, overall, summary: text, mode }
+}
