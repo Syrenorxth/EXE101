@@ -1,6 +1,7 @@
 import { COMPANIES, TOPICS, PERSONAS, POSITIONS } from '../data/content.js'
 import { isTopicUnlocked, doneKey } from '../lib/progress.js'
 import { AI_ENABLED } from '../lib/aiEngine.js'
+import { STT_SUPPORTED, TTS_SUPPORTED } from '../lib/speech.js'
 
 export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip, onBack }) {
   const company = COMPANIES.find((c) => c.id === setup.companyId)
@@ -77,6 +78,18 @@ export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip
               <input id="time-challenge" type="checkbox" checked={setup.timeChallenge} onChange={(e) => onChange({ timeChallenge: e.target.checked })} />
               <span>{setup.timeChallenge ? `Bật · ${persona.timeLimit} giây mỗi câu (+5 điểm thưởng)` : 'Tắt'}</span>
             </label>
+          </div>
+          <div>
+            <h2 className="block-title">Giọng nói</h2>
+            <label className="switch">
+              <input id="voice" type="checkbox" checked={setup.voice} disabled={!TTS_SUPPORTED} onChange={(e) => onChange({ voice: e.target.checked })} />
+              <span>Đọc câu hỏi thành tiếng (Text-to-Speech)</span>
+            </label>
+            <p className="muted">
+              {STT_SUPPORTED
+                ? 'Trong buổi phỏng vấn, bấm nút micro để trả lời bằng giọng nói (Speech-to-Text).'
+                : 'Trình duyệt này chưa hỗ trợ nói thành chữ. Hãy dùng Chrome hoặc Edge để trả lời bằng micro.'}
+            </p>
           </div>
           <div>
             <h2 className="block-title">Chế độ chấm</h2>

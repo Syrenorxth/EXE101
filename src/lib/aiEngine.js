@@ -1,6 +1,6 @@
 // Người phỏng vấn dùng AI thật (qua proxy /api/chat của Vite, xem vite.config.js).
 import { PERSONAS, TOPICS, POSITIONS, COMPANIES } from '../data/content.js'
-import { finalize } from './mockEngine.js'
+import { finalize, splitSentences } from './mockEngine.js'
 
 /* global __AI_ENABLED__, __AI_MODEL__ */
 export const AI_ENABLED = typeof __AI_ENABLED__ !== 'undefined' && __AI_ENABLED__
@@ -82,7 +82,8 @@ export async function aiStart(session) {
   return [message]
 }
 
-export async function aiReply(session, answer, timedOut) {
+export async function aiReply(session, answer, timedOut, spoken = false) {
+  session.spoken = session.spoken || spoken
   const content = timedOut ? `${answer || '(không trả lời)'}\n(Ứng viên hết thời gian trả lời)` : answer
   session.messages.push({ role: 'user', content })
   session.transcript.push({ who: 'Ứng viên', text: content })
@@ -122,10 +123,14 @@ Chấm từng câu hỏi chính (gộp cả câu trả lời cho câu đào sâu
 - relevance: đúng trọng tâm câu hỏi
 - clarity: diễn đạt rõ ràng, độ dài hợp lý
 - structure: có cấu trúc (STAR với câu hành vi; định nghĩa → ví dụ → so sánh với câu kỹ thuật)
-Chấm sát thực tế cấp độ ${ctx.position}, không cho điểm cao nếu câu trả lời sơ sài. Câu bị hết giờ thì trừ điểm clarity.
+Chấm sát thực tế cấp độ ${ctx.position}, không cho điểm cao nếu câu trả lời sơ sài. Câu bị hết giờ thì trừ điểm clarity.${session.spoken ? '\nỨng viên trả lời bằng giọng nói được chuyển thành chữ tự động: bỏ qua lỗi chính tả hoặc dấu câu do máy nhận diện, chỉ đánh giá nội dung và cách diễn đạt.' : ''}
+Với mỗi câu hỏi chính:
+- "answer": chép NGUYÊN VĂN câu trả lời của ứng viên (gộp cả phần trả lời câu đào sâu), không tóm tắt.
+- "sentences": chỉ ra tối đa 4 câu cụ thể có vấn đề. "text" phải trích NGUYÊN VĂN đúng một câu trong câu trả lời; "issue" nói rõ câu đó sai ở đâu (lạc đề, mơ hồ, thiếu số liệu, thiếu vai trò cá nhân, từ ngữ chưa phù hợp, thiếu tự tin, sai kiến thức...); "fix" viết lại chính câu đó cho tốt hơn, bằng ${ctx.language === 'en' ? 'tiếng Anh' : 'tiếng Việt'}. Nếu không câu nào có vấn đề thì để mảng rỗng.
+- "model_answer": viết một câu trả lời mẫu hoàn chỉnh, tối ưu cho câu hỏi này, 80–150 từ, dùng lại kinh nghiệm và chi tiết ứng viên đã nêu (không bịa thêm thành tích lớn), theo cấu trúc STAR hoặc định nghĩa → ví dụ → so sánh, viết bằng ${ctx.language === 'en' ? 'tiếng Anh' : 'tiếng Việt'}.
 Viết nhận xét bằng tiếng Việt, cụ thể, dựa trên chính câu trả lời của ứng viên.
 Chỉ trả về JSON hợp lệ, không thêm chữ nào khác, theo mẫu:
-{"answers":[{"question":"...","answer":"tóm tắt câu trả lời của ứng viên","relevance":0,"clarity":0,"structure":0,"strengths":["..."],"improvements":["..."],"better":"Gợi ý câu trả lời tốt hơn, 2–4 câu"}],"summary":"Nhận xét chung 2–3 câu"}
+{"answers":[{"question":"...","answer":"nguyên văn câu trả lời","relevance":0,"clarity":0,"structure":0,"strengths":["..."],"improvements":["..."],"sentences":[{"text":"câu nguyên văn","issue":"vấn đề","fix":"câu viết lại"}],"better":"Dàn ý ngắn để trả lời tốt hơn","model_answer":"câu trả lời mẫu hoàn chỉnh"}],"summary":"Nhận xét chung 2–3 câu"}
 
 BẢN GHI:
 ${transcript}`
@@ -135,6 +140,17 @@ ${transcript}`
   const answers = (data.answers || []).map((a) => ({
     question: a.question || '',
     answer: a.answer || '',
+    spoken: Boolean(session.spoken),
+    model: a.model_answer || '',
+    sentenceIssues: (a.sentences || [])
+      .filter((x) => x && x.text)
+      .slice(0, 4)
+      .map((x) => ({
+        index: splitSentences(a.answer || '').findIndex((s) => s.includes(x.text.trim()) || x.text.includes(s)),
+        text: x.text,
+        issue: x.issue || '',
+        fix: x.fix || ''
+      })),
     relevance: score(a.relevance),
     clarity: score(a.clarity),
     structure: score(a.structure),

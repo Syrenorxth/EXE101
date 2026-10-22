@@ -1,6 +1,6 @@
 // "Chế độ demo": người phỏng vấn theo kịch bản + chấm điểm theo quy tắc.
 // Dùng khi chưa cấu hình API key, hoặc khi cần trình chiếu không có mạng.
-import { QUESTIONS, SITUATION_CHANGES, PERSONAS, TOPICS } from '../data/content.js'
+import { QUESTIONS, SITUATION_CHANGES, PERSONAS, TOPICS, COMPANIES, MODEL_ANSWERS } from '../data/content.js'
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5)
@@ -31,14 +31,14 @@ const CLOSING = {
   en: 'Thank you for your time. Your detailed feedback is coming up next.'
 }
 
-const RESULT_WORDS = ['kết quả', 'cuối cùng', 'hoàn thành', 'tăng', 'giảm', 'nhờ đó', 'bài học', '%', 'result', 'finally', 'increased', 'reduced', 'achieved', 'completed', 'learned']
+const RESULT_WORDS = ['kết quả', 'cuối cùng', 'hoàn thành', 'tăng', 'giảm', 'nhờ đó', 'bài học', '%', 'result', 'finally', 'increased', 'reduced', 'improved', 'saved', 'achieved', 'completed', 'learned', 'outcome']
 const EXAMPLE_WORDS = ['ví dụ', 'chẳng hạn', 'như là', 'example', 'for instance', 'such as']
 
 export function createMockSession(ctx) {
   const topic = TOPICS.find((t) => t.id === ctx.topicId)
   const ids = shuffle(topic.questionIds).slice(0, topic.take)
   const plan = ids.map((id) => ({ ...QUESTIONS[id], id, kind: id.startsWith('t') ? 'tech' : 'behavior' }))
-  if (topic.situationChange) plan.push({ ...pick(SITUATION_CHANGES), id: 'sc', kind: 'situation' })
+  if (topic.situationChange) plan.push({ ...pick(SITUATION_CHANGES), kind: 'situation' })
   return { ctx, plan, index: 0, followUpAsked: false, answers: plan.map(() => []) }
 }
 
@@ -66,10 +66,10 @@ export function mockStart(session) {
 }
 
 // Nhận câu trả lời, trả về { messages, done }.
-export function mockReply(session, answer, timedOut) {
+export function mockReply(session, answer, timedOut, spoken = false) {
   const lang = session.ctx.language
   const persona = PERSONAS[session.ctx.personaId]
-  session.answers[session.index].push({ text: answer, timedOut })
+  session.answers[session.index].push({ text: answer, timedOut, spoken })
 
   if (!session.followUpAsked && !timedOut) {
     const reason = needsFollowUp(session, answer)
@@ -95,7 +95,8 @@ export function mockReply(session, answer, timedOut) {
 }
 
 // ---------- Chấm điểm theo quy tắc ----------
-const FILLERS = ['thì là', 'kiểu như', 'kiểu là', 'ừm', 'ờ ', 'nói chung là', ' um ', ' uh ', ' like ']
+const FILLERS = ['thì là', 'kiểu như', 'kiểu là', 'ừm', 'ờ', 'nói chung là', 'um', 'uh', 'erm', 'you know', 'i mean', 'basically']
+const FILLER_EXAMPLE = { vi: '"thì là", "kiểu như"', en: '"um", "uh", "you know", "basically"' }
 const STAR = [
   ['bối cảnh', 'khi ', 'lúc ', 'hồi ', 'trong dự án', 'học kỳ', 'situation', 'when ', 'during'],
   ['nhiệm vụ', 'phụ trách', 'yêu cầu', 'mục tiêu', 'cần ', 'task', 'goal', 'responsible'],
@@ -109,7 +110,93 @@ const TECH = [
 ]
 const CONNECTORS = ['đầu tiên', 'thứ nhất', 'thứ hai', 'sau đó', 'tiếp theo', 'cuối cùng', 'first', 'second', 'then', 'next', 'finally']
 
-function scoreAnswer(q, text, timedOut) {
+// ---------- Chỉ lỗi theo từng câu ----------
+export function splitSentences(text) {
+  return text
+    .split(/(?<=[.!?…])\s+|\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+const VAGUE = ['nhiều', 'khá tốt', 'rất tốt', 'cũng ổn', 'khá ổn', 'bình thường', 'cũng được', 'một số', 'a lot', 'lots of', 'pretty good', 'very good', 'some things', 'many things', 'stuff', 'various']
+const HEDGE = ['em không biết', 'mình không biết', 'chắc là', 'có lẽ', 'không chắc', "i don't know", 'i dont know', 'i am not sure', "i'm not sure", 'maybe', 'i guess', 'i think maybe', 'probably']
+const INFORMAL = ['oke', 'ok', 'okela', 'bt', 'vl', 'gonna', 'wanna', 'kinda', 'gotta', 'yeah', 'yep', 'nope', 'cool', 'awesome']
+const TEAM_ONLY = ['nhóm em', 'chúng em', 'bọn em', 'nhóm mình', 'we', 'our team', 'my team']
+const SELF = ['em đã', 'em phụ trách', 'em tự', 'mình đã', 'mình phụ trách', 'tôi đã', 'tôi phụ trách', 'i built', 'i did', 'i was', 'i designed', 'i implemented', 'i wrote', 'i handled', 'i led', 'i created', 'i developed', 'i worked on', "i'm responsible", 'i am responsible', 'my role', 'my part']
+
+// Gợi ý câu nói mẫu theo ngôn ngữ phỏng vấn (giải thích vẫn bằng tiếng Việt).
+const FIX_TEXT = {
+  hedge: {
+    vi: 'Nói điều bạn biết chắc, hoặc nêu cách bạn sẽ tìm hiểu: “Em chưa làm trực tiếp, nhưng em sẽ bắt đầu bằng…”.',
+    en: 'Nói điều bạn biết chắc, hoặc nêu cách bạn sẽ tìm hiểu: “I haven\'t done this directly yet, but I would start by…”.'
+  },
+  team: {
+    vi: 'Nói rõ vai trò của bạn: “Trong nhóm, em phụ trách…, em đã…”.',
+    en: 'Nói rõ vai trò của bạn: “In the team, I was responsible for…, and I…”.'
+  },
+  informal: {
+    vi: 'Dùng từ trang trọng hơn, ví dụ “được ạ”, “nhìn chung”, “cụ thể là”.',
+    en: 'Dùng từ trang trọng hơn, ví dụ “yes” thay cho “yeah”, “going to” thay cho “gonna”, “great” thay cho “awesome”.'
+  }
+}
+
+const escapeRe = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+// Khớp nguyên cụm từ (tránh nhầm “ổn” trong “ổn định”).
+const hasWord = (text, w) => new RegExp(`(^|[\\s,.;:!?“”"'()])${escapeRe(w)}(?=$|[\\s,.;:!?“”"'()])`, 'i').test(text)
+const hasAny = (text, list) => list.some((w) => hasWord(text, w))
+
+function cleanFillers(sentence) {
+  let out = sentence
+  for (const f of FILLERS) {
+    out = out.replace(new RegExp(`(^|[\\s,.;:!?])${escapeRe(f)}(?=$|[\\s,.;:!?])[,]?`, 'gi'), '$1')
+  }
+  out = out.replace(/\s{2,}/g, ' ').replace(/\s+([,.!?])/g, '$1').replace(/^[\s,]+/, '').trim()
+  return out.charAt(0).toUpperCase() + out.slice(1)
+}
+
+// Trả về danh sách câu có vấn đề: { index, text, issue, fix }
+export function analyzeSentences(q, text, lang = 'vi') {
+  const sentences = splitSentences(text)
+  const whole = ` ${text.toLowerCase()} `
+  const talksAboutSelf = SELF.some((w) => whole.includes(w))
+  const issues = []
+
+  sentences.forEach((sentence, index) => {
+    const lower = ` ${sentence.toLowerCase()} `
+    const n = sentence.split(/\s+/).length
+    let issue = null
+    let fix = null
+
+    if (hasAny(lower, FILLERS)) {
+      issue = 'Có từ đệm làm câu nói thiếu chắc chắn.'
+      fix = `Bỏ từ đệm: “${cleanFillers(sentence)}”`
+    } else if (hasAny(lower, HEDGE)) {
+      issue = 'Cách nói thiếu tự tin, dễ khiến người phỏng vấn nghi ngờ năng lực.'
+      fix = FIX_TEXT.hedge[lang]
+    } else if (sentences.length === 1 && n < 8) {
+      issue = 'Câu trả lời chỉ có một câu ngắn, chưa đủ thông tin để đánh giá.'
+      fix = 'Mở rộng theo dàn ý gợi ý bên dưới, ít nhất 3–4 câu.'
+    } else if (n > 35) {
+      issue = `Câu quá dài (${n} từ), người nghe khó theo kịp.`
+      fix = 'Tách thành 2–3 câu ngắn, mỗi câu chỉ nói một ý.'
+    } else if (q.kind !== 'tech' && !talksAboutSelf && hasAny(lower, TEAM_ONLY)) {
+      issue = 'Chỉ nói về cả nhóm, chưa rõ chính bạn đã làm gì.'
+      fix = FIX_TEXT.team[lang]
+    } else if (hasAny(lower, VAGUE) && !/\d/.test(sentence)) {
+      issue = 'Diễn đạt chung chung, thiếu con số hoặc ví dụ cụ thể.'
+      fix = 'Thêm số liệu hoặc ví dụ: thời gian, số người dùng, mức cải thiện (%)...'
+    } else if (hasAny(lower, INFORMAL)) {
+      issue = 'Từ ngữ hơi thân mật, chưa phù hợp với buổi phỏng vấn.'
+      fix = FIX_TEXT.informal[lang]
+    }
+
+    if (issue) issues.push({ index, text: sentence, issue, fix })
+  })
+
+  return issues.slice(0, 4)
+}
+
+function scoreAnswer(q, text, timedOut, lang = 'vi') {
   const lower = ` ${text.toLowerCase()} `
   const n = words(text)
   const strengths = []
@@ -121,7 +208,8 @@ function scoreAnswer(q, text, timedOut) {
   if (n < 10) relevance = Math.min(relevance, 3)
   if (relevance >= 7) strengths.push('Bám sát câu hỏi, đề cập đúng các ý chính.')
   else {
-    const missing = q.kw.filter((k) => !lower.includes(k)).slice(0, 4)
+    const isAscii = (k) => /^[\x00-\x7F]+$/.test(k)
+    const missing = q.kw.filter((k) => !lower.includes(k) && (lang === 'en' ? isAscii(k) : true)).slice(0, 4)
     improvements.push(`Câu trả lời chưa chạm đủ ý chính. Nên nhắc tới: ${missing.join(', ')}.`)
   }
 
@@ -129,12 +217,12 @@ function scoreAnswer(q, text, timedOut) {
   let clarity = 10
   const sentences = text.split(/[.!?…]+/).filter((s) => s.trim()).length || 1
   const avgLen = n / sentences
-  const fillerCount = FILLERS.filter((f) => lower.includes(f)).length
+  const fillerCount = FILLERS.filter((f) => hasWord(lower, f)).length
   if (n < 25) { clarity -= 4; improvements.push('Câu trả lời quá ngắn, nhà tuyển dụng khó đánh giá năng lực của bạn.') }
   else if (n < 40) clarity -= 1
   if (n > 220) { clarity -= 3; improvements.push('Câu trả lời khá dài. Hãy nói ý chính trước rồi mới giải thích.') }
   if (avgLen > 35) { clarity -= 2; improvements.push('Câu văn quá dài, nên tách thành nhiều câu ngắn.') }
-  if (fillerCount) { clarity -= Math.min(3, fillerCount); improvements.push('Hạn chế các từ đệm như "thì là", "kiểu như".') }
+  if (fillerCount) { clarity -= Math.min(3, fillerCount); improvements.push(`Hạn chế các từ đệm như ${FILLER_EXAMPLE[lang] || FILLER_EXAMPLE.vi}.`) }
   if (timedOut) { clarity -= 1; improvements.push('Bạn chưa hoàn thành câu trả lời trong thời gian giới hạn.') }
   clarity = clamp(clarity)
   if (clarity >= 7) strengths.push('Độ dài hợp lý, diễn đạt dễ theo dõi.')
@@ -161,7 +249,19 @@ export function mockEvaluate(session) {
     const parts = session.answers[i]
     const text = parts.map((p) => p.text).join(' ')
     const timedOut = parts.some((p) => p.timedOut)
-    return { question: q[lang], answer: text, timedOut, better: q.outline, ...scoreAnswer(q, text, timedOut) }
+    const spoken = parts.some((p) => p.spoken)
+    const companyName = COMPANIES.find((c) => c.id === session.ctx.companyId)?.name || ''
+    const model = (MODEL_ANSWERS[q.id]?.[lang] || '').replaceAll('{company}', companyName)
+    return {
+      question: q[lang],
+      answer: text,
+      timedOut,
+      spoken,
+      better: q.outline,
+      model,
+      sentenceIssues: analyzeSentences(q, text, lang),
+      ...scoreAnswer(q, text, timedOut, lang)
+    }
   })
   return finalize(answers, null, 'demo')
 }

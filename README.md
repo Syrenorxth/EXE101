@@ -32,6 +32,29 @@ Muốn tắt: bấm `Ctrl + C` trong Terminal.
 
 Chế độ demo: người phỏng vấn đi theo kịch bản có sẵn, chấm điểm theo quy tắc (từ khóa, độ dài, cấu trúc STAR).
 
+### Ngôn ngữ phỏng vấn
+
+Mặc định hội thoại phỏng vấn bằng **tiếng Anh** (câu hỏi, câu đào sâu, câu trả lời mẫu, giọng đọc en-US). Phần nhận xét vẫn bằng tiếng Việt để dễ hiểu.
+Có thể đổi sang tiếng Việt ở bước **Thiết lập**.
+
+### Giọng nói (Speech-to-Text và Text-to-Speech)
+
+Dùng Web Speech API có sẵn trong trình duyệt, miễn phí, không cần API key hay cài thêm gì.
+
+- **Text-to-Speech:** người phỏng vấn tự đọc câu hỏi thành tiếng (bật/tắt ở bước Thiết lập). Mỗi câu hỏi có nút **Nghe** để nghe lại. Đồng hồ tạm dừng trong lúc đọc.
+- **Speech-to-Text:** bấm **Nói câu trả lời** để trả lời bằng micro, chữ hiện dần vào ô nhập, có thể sửa lại trước khi gửi.
+- Micro cần mở bằng **Chrome hoặc Edge** và cho phép trình duyệt dùng micro ở lần đầu. Trình duyệt khác vẫn gõ phím bình thường.
+
+### Khung đánh giá
+
+Sau buổi phỏng vấn, mỗi câu hỏi có:
+
+- Điểm 3 tiêu chí: Relevance, Clarity, Structure.
+- **Lỗi cụ thể theo từng câu:** câu có lỗi được tô đỏ và đánh số ngay trong câu trả lời, kèm "Vấn đề" và "Nên sửa"
+  (từ đệm, nói chung chung không có số liệu, chỉ nói về nhóm mà không nói vai trò bản thân, câu quá dài, thiếu tự tin, từ ngữ suồng sã...).
+- **Câu trả lời mẫu tối ưu** (có nút **Nghe mẫu**) và dàn ý gợi ý.
+  Chế độ demo dùng câu mẫu soạn sẵn; chế độ AI viết câu mẫu riêng dựa trên chính nội dung bạn đã trả lời.
+
 ### Bật AI thật
 
 1. Sao chép file `.env.example` thành `.env` (cùng thư mục).
@@ -46,8 +69,8 @@ API key chỉ nằm ở máy chủ dev của Vite (xem `vite.config.js`), trình
 
 ## 4. Luồng sử dụng
 
-Chọn ngành → Chọn doanh nghiệp mô phỏng → Thiết lập (vị trí, chủ đề, người phỏng vấn, ngôn ngữ, giới hạn thời gian)
-→ Học trước → Phỏng vấn → Nhận phản hồi (Relevance, Clarity, Structure) → Tích lũy điểm rèn luyện → Mở rộng lộ trình.
+Chọn ngành → Chọn doanh nghiệp mô phỏng → Thiết lập (vị trí, chủ đề, người phỏng vấn, ngôn ngữ, giới hạn thời gian, giọng nói)
+→ Học trước → Phỏng vấn (gõ phím hoặc nói) → Nhận phản hồi (3 tiêu chí, lỗi từng câu, câu trả lời mẫu) → Tích lũy điểm rèn luyện → Mở rộng lộ trình.
 
 - PixelStart mở sẵn; NovaTech cần 60 điểm rèn luyện; GlobalCore cần 150 điểm.
 - Chủ đề 2 mở khi xong chủ đề 1, chủ đề 3 mở khi xong chủ đề 2.
@@ -69,19 +92,20 @@ code/
     ├── data/content.js     # Ngành, doanh nghiệp, vai phỏng vấn, bài học, ngân hàng câu hỏi
     ├── lib/
     │   ├── aiEngine.js     # Người phỏng vấn AI + chấm điểm bằng AI
-    │   ├── mockEngine.js   # Chế độ demo + chấm điểm theo quy tắc
+    │   ├── mockEngine.js   # Chế độ demo + chấm điểm theo quy tắc + bắt lỗi từng câu
+    │   ├── speech.js       # Nói thành chữ và đọc thành tiếng (Web Speech API)
     │   └── progress.js     # Điểm rèn luyện, mở khóa, lịch sử
-    ├── components/         # Header, Stepper, ScoreBar
+    ├── components/         # Header, Stepper, ScoreBar, Icons
     └── screens/            # Từng màn hình của luồng sử dụng
 ```
 
-Muốn thêm câu hỏi, doanh nghiệp hay bài học: chỉ cần sửa `src/data/content.js`.
+Muốn thêm câu hỏi, câu trả lời mẫu, doanh nghiệp hay bài học: chỉ cần sửa `src/data/content.js`.
 
 ## 6. Phạm vi MVP
 
 Có: ngành IT · Intern, Fresher · 3 doanh nghiệp mô phỏng · 3 chủ đề · 3 vai nhà tuyển dụng ·
-phỏng vấn văn bản · câu hỏi đào sâu, giới hạn thời gian, tình huống thay đổi · phản hồi 3 tiêu chí ·
-điểm rèn luyện và mở khóa.
+phỏng vấn bằng văn bản hoặc giọng nói (Speech-to-Text, Text-to-Speech) · câu hỏi đào sâu, giới hạn thời gian, tình huống thay đổi ·
+phản hồi 3 tiêu chí, chỉ rõ lỗi từng câu, câu trả lời mẫu tối ưu · điểm rèn luyện và mở khóa.
 
-Để sau MVP: phỏng vấn giọng nói, đánh giá phát âm, ngành khác, cấp Junior/Senior, tài khoản đăng nhập,
+Để sau MVP: đánh giá phát âm và ngữ điệu, ngành khác, cấp Junior/Senior, tài khoản đăng nhập,
 dashboard cho nhà trường.

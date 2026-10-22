@@ -23,8 +23,9 @@ export default function App() {
     position: 'Intern',
     topicId: 1,
     personaId: 'hr',
-    language: 'vi',
+    language: 'en',
     timeChallenge: true,
+    voice: true,
     mode: AI_ENABLED ? 'ai' : 'demo'
   })
   const [result, setResult] = useState(null)
