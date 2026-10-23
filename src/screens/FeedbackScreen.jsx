@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import ScoreBar, { tone } from '../components/ScoreBar.jsx'
 import { SpeakerIcon } from '../components/Icons.jsx'
-import { COMPANIES } from '../data/content.js'
+import { COMPANIES, REVERSE_TIP } from '../data/content.js'
 import { splitSentences } from '../lib/mockEngine.js'
 import { speak, stopSpeaking, TTS_SUPPORTED } from '../lib/speech.js'
 
 const CRITERIA = [
   ['relevance', 'Relevance', 'Đúng trọng tâm câu hỏi'],
   ['clarity', 'Clarity', 'Diễn đạt rõ ràng, độ dài hợp lý'],
-  ['structure', 'Structure', 'Có cấu trúc (STAR / định nghĩa → ví dụ → so sánh)']
+  ['structure', 'Structure', 'Có cấu trúc (STAR / định nghĩa → ví dụ → so sánh / xử lý sự cố)']
 ]
 
 // Hiển thị câu trả lời, tô màu và đánh số những câu có lỗi.
@@ -32,6 +32,27 @@ function AnnotatedAnswer({ answer, issues }) {
         )
       }).reduce((acc, el, i) => (i ? [...acc, ' ', el] : [el]), [])}
     </p>
+  )
+}
+
+// Phần "Bạn có câu hỏi nào không?" cuối buổi: không chấm điểm, chỉ góp ý.
+function ReverseBox({ reverse, lang }) {
+  const text = (reverse.text || '').trim()
+  const n = text ? text.split(/\s+/).length : 0
+  const declined = !text || /^(no|nope|not really|không|dạ không|em không|mình không)\b/i.test(text)
+  const asked = !declined && (text.includes('?') || n >= 6)
+  return (
+    <div className="card summary reverse-box">
+      <h2 className="block-title">
+        Câu hỏi bạn hỏi lại nhà tuyển dụng <span className="tag inline">Không tính điểm</span>
+      </h2>
+      <p className="quote">{text || '(Không có câu hỏi)'}</p>
+      <p className="muted">
+        {asked
+          ? 'Tốt: chủ động hỏi lại cho thấy bạn thật sự quan tâm đến vị trí. Câu hỏi nên xoay quanh công việc, nhóm hoặc lộ trình phát triển, tránh hỏi ngay về lương thưởng ở vòng đầu.'
+          : (REVERSE_TIP[lang] || REVERSE_TIP.vi)}
+      </p>
+    </div>
   )
 }
 
@@ -167,6 +188,8 @@ export default function FeedbackScreen({ result, setup, onRetry, onNextTopic, on
           )
         })}
       </div>
+
+      {result.reverse && <ReverseBox reverse={result.reverse} lang={setup.language} />}
 
       <div className="actions">
         <button className="btn btn-primary" onClick={onRetry}>Luyện lại chủ đề này</button>

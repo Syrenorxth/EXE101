@@ -6,6 +6,8 @@ import { STT_SUPPORTED, TTS_SUPPORTED } from '../lib/speech.js'
 export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip, onBack }) {
   const company = COMPANIES.find((c) => c.id === setup.companyId)
   const persona = PERSONAS[setup.personaId]
+  const topic = TOPICS.find((t) => t.id === setup.topicId)
+  const locked = topic?.lockedPersona
 
   return (
     <section className="screen">
@@ -55,13 +57,21 @@ export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip
           <h2 className="block-title">Người phỏng vấn</h2>
           <div className="grid grid-3 tight">
             {Object.values(PERSONAS).map((p) => (
-              <button key={p.id} className={`option ${setup.personaId === p.id ? 'on' : ''}`} onClick={() => onChange({ personaId: p.id })}>
+              <button
+                key={p.id}
+                disabled={Boolean(locked) && locked !== p.id}
+                className={`option ${setup.personaId === p.id ? 'on' : ''} ${locked && locked !== p.id ? 'disabled' : ''}`}
+                onClick={() => onChange({ personaId: p.id })}
+              >
                 <span className="option-title">{p.name}</span>
                 <span className="option-num">{p.role}</span>
                 <span className="option-desc">{p.trait}. Rèn: {p.trains.toLowerCase()}.</span>
               </button>
             ))}
           </div>
+          {locked && (
+            <p className="muted">Phỏng vấn chuyên môn luôn do {PERSONAS[locked].name} ({PERSONAS[locked].role.toLowerCase()}) đảm nhận, giống vòng phỏng vấn kỹ thuật thật.</p>
+          )}
         </div>
 
         <div className="setup-block two-col">

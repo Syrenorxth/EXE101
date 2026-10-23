@@ -26,7 +26,7 @@ function makeEngine(setup) {
   }
 }
 
-const KIND_LABEL = { followup: 'Câu hỏi đào sâu', situation: 'Tình huống thay đổi' }
+const KIND_LABEL = { followup: 'Câu hỏi đào sâu', situation: 'Tình huống thay đổi', reverse: 'Câu hỏi cuối buổi · không tính điểm' }
 
 export default function InterviewScreen({ setup, onFinish, onExit, onSwitchToDemo }) {
   const company = COMPANIES.find((c) => c.id === setup.companyId)

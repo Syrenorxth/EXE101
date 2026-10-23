@@ -1,6 +1,6 @@
 // Người phỏng vấn dùng AI thật (qua proxy /api/chat của Vite, xem vite.config.js).
-import { PERSONAS, TOPICS, POSITIONS, COMPANIES } from '../data/content.js'
-import { finalize, splitSentences } from './mockEngine.js'
+import { PERSONAS, TOPICS, POSITIONS, COMPANIES, REVERSE_QUESTION } from '../data/content.js'
+import { finalize, splitSentences, buildPlan } from './mockEngine.js'
 
 /* global __AI_ENABLED__, __AI_MODEL__ */
 export const AI_ENABLED = typeof __AI_ENABLED__ !== 'undefined' && __AI_ENABLED__
@@ -8,6 +8,7 @@ const MODEL = typeof __AI_MODEL__ !== 'undefined' ? __AI_MODEL__ : 'gpt-4o-mini'
 
 const END = '[KẾT THÚC]'
 const SITUATION = '[TÌNH HUỐNG]'
+const REVERSE = '[HỎI LẠI]'
 const MAX_TURNS = 12
 
 async function chat(messages, temperature = 0.7) {
@@ -26,14 +27,17 @@ async function chat(messages, temperature = 0.7) {
   return text.trim()
 }
 
-function systemPrompt(ctx) {
+function systemPrompt(ctx, plan) {
   const persona = PERSONAS[ctx.personaId]
   const topic = TOPICS.find((t) => t.id === ctx.topicId)
   const company = COMPANIES.find((c) => c.id === ctx.companyId)
-  const mainCount = topic.take + (topic.situationChange ? 1 : 0)
-  const language = ctx.language === 'en'
+  const lang = ctx.language === 'en' ? 'en' : 'vi'
+  const language = lang === 'en'
     ? 'English'
     : 'Tiếng Việt, giữ nguyên thuật ngữ kỹ thuật tiếng Anh như cách người phỏng vấn ở Việt Nam thường nói'
+  const order = plan
+    .map((q, i) => `${i + 1}. [${q.stage}]${q.bridge ? ` Câu chuyển ý trước khi hỏi: "${q.bridge[lang]}".` : ''} Câu hỏi: "${q[lang]}"`)
+    .join('\n')
 
   return `Bạn đóng vai người phỏng vấn trong PalSpeak, nền tảng luyện phỏng vấn cho sinh viên IT Việt Nam.
 Vai của bạn: ${persona.name} – ${persona.role}. Phong cách: ${persona.trait}.
@@ -42,21 +46,29 @@ Vị trí ứng tuyển: ${ctx.position} (${POSITIONS[ctx.position]}).
 Chủ đề: ${topic.name}. Mục tiêu: ${topic.goal}
 Ngôn ngữ phỏng vấn: ${language}.
 
+Buổi phỏng vấn đi theo đúng trình tự của một buổi phỏng vấn thật. Hỏi ĐÚNG ${plan.length} câu hỏi chính sau, ĐÚNG thứ tự, không thêm câu chính khác, không đảo thứ tự:
+${order}
+
 Quy tắc:
-1. Mỗi lượt chỉ hỏi MỘT câu, tối đa 60 từ.
-2. Buổi phỏng vấn có đúng ${mainCount} câu hỏi chính, phù hợp chủ đề và cấp độ ${ctx.position}.
-3. Nếu câu trả lời mơ hồ, quá ngắn hoặc thiếu kết quả cụ thể, hỏi thêm tối đa MỘT câu đào sâu cho câu hỏi chính đó.
-${topic.situationChange ? `4. Câu hỏi chính cuối cùng là một tình huống thay đổi đột ngột trong dự án (deadline, nhân sự, yêu cầu khách hàng). Bắt đầu lượt đó bằng "${SITUATION}".` : '4. Không có tình huống thay đổi trong buổi này.'}
-5. Không nhận xét, không chấm điểm, không gợi ý đáp án trong lúc phỏng vấn.
-6. Lượt đầu tiên: chào ngắn theo đúng phong cách của vai, rồi hỏi câu chính thứ nhất.
-7. Khi ứng viên đã trả lời xong câu chính cuối cùng (và câu đào sâu nếu có), cảm ơn ngắn gọn và kết thúc bằng đúng chuỗi "${END}".
-8. Nếu ứng viên trả lời lạc đề hoặc không nghiêm túc, nhắc nhẹ và hỏi lại.`
+1. Mỗi lượt chỉ hỏi MỘT câu, tối đa 60 từ. Có thể diễn đạt lại câu hỏi cho tự nhiên theo phong cách của vai, nhưng giữ nguyên ý.
+2. Lượt đầu tiên: chào ngắn theo đúng phong cách của vai, rồi hỏi câu chính thứ nhất.
+3. Khi chuyển sang câu chính tiếp theo: cảm ơn thật ngắn, nói câu chuyển ý (nếu có) rồi hỏi câu đó.
+4. Nếu câu trả lời mơ hồ, quá ngắn hoặc thiếu kết quả cụ thể, hỏi thêm tối đa MỘT câu đào sâu cho câu chính đó, bám vào chính điều ứng viên vừa nói.
+${topic.situationChange ? `5. Câu chính cuối cùng là tình huống thay đổi. Bắt đầu lượt đó bằng "${SITUATION}".` : '5. Không có tình huống thay đổi trong buổi này.'}
+6. Không nhận xét, không chấm điểm, không gợi ý đáp án trong lúc phỏng vấn.
+7. Khi ứng viên đã trả lời xong câu chính cuối cùng (và câu đào sâu nếu có), bắt đầu lượt bằng "${REVERSE}" rồi hỏi đúng ý: "${REVERSE_QUESTION[lang]}"
+8. Sau khi ứng viên trả lời lượt đó: nếu họ có hỏi thì trả lời ngắn gọn 1–2 câu theo vai, cảm ơn và kết thúc bằng đúng chuỗi "${END}".
+9. Nếu ứng viên trả lời lạc đề hoặc không nghiêm túc, nhắc nhẹ và hỏi lại.`
 }
 
 function toMessage(raw) {
   let text = raw
   let done = false
   let kind = 'question'
+  if (text.includes(REVERSE)) {
+    text = text.replace(REVERSE, '').trim()
+    kind = 'reverse'
+  }
   if (text.includes(END)) {
     done = true
     text = text.replace(END, '').trim()
@@ -70,7 +82,16 @@ function toMessage(raw) {
 }
 
 export function createAiSession(ctx) {
-  return { ctx, messages: [{ role: 'system', content: systemPrompt(ctx) }], turns: 0, transcript: [] }
+  const plan = buildPlan(ctx.topicId)
+  return {
+    ctx,
+    plan,
+    messages: [{ role: 'system', content: systemPrompt(ctx, plan) }],
+    turns: 0,
+    transcript: [],
+    reverseAsked: false,
+    reverse: null
+  }
 }
 
 export async function aiStart(session) {
@@ -86,7 +107,12 @@ export async function aiReply(session, answer, timedOut, spoken = false) {
   session.spoken = session.spoken || spoken
   const content = timedOut ? `${answer || '(không trả lời)'}\n(Ứng viên hết thời gian trả lời)` : answer
   session.messages.push({ role: 'user', content })
-  session.transcript.push({ who: 'Ứng viên', text: content })
+  if (session.reverseAsked) {
+    // Câu trả lời cho lượt "Bạn có câu hỏi nào không?" – không đưa vào phần chấm điểm.
+    session.reverse = { text: answer, timedOut, spoken }
+  } else {
+    session.transcript.push({ who: 'Ứng viên', text: content })
+  }
 
   if (session.turns >= MAX_TURNS) {
     const closing = session.ctx.language === 'en' ? 'Thank you, that is all for today.' : 'Cảm ơn bạn, buổi phỏng vấn kết thúc tại đây.'
@@ -97,7 +123,8 @@ export async function aiReply(session, answer, timedOut, spoken = false) {
   session.messages.push({ role: 'assistant', content: raw })
   session.turns += 1
   const { done, message } = toMessage(raw)
-  session.transcript.push({ who: 'Người phỏng vấn', text: message.text })
+  if (message.kind === 'reverse') session.reverseAsked = true
+  else if (!session.reverseAsked) session.transcript.push({ who: 'Người phỏng vấn', text: message.text })
   return { done, messages: [message] }
 }
 
@@ -122,7 +149,7 @@ Dưới đây là bản ghi buổi phỏng vấn vị trí ${ctx.position} tại
 Chấm từng câu hỏi chính (gộp cả câu trả lời cho câu đào sâu của nó) theo 3 tiêu chí, thang 1–10:
 - relevance: đúng trọng tâm câu hỏi
 - clarity: diễn đạt rõ ràng, độ dài hợp lý
-- structure: có cấu trúc (STAR với câu hành vi; định nghĩa → ví dụ → so sánh với câu kỹ thuật)
+- structure: có cấu trúc (STAR với câu hành vi; định nghĩa → ví dụ → so sánh với câu kiến thức; khoanh vùng → tìm nguyên nhân → khắc phục → báo cáo với câu xử lý sự cố)
 Chấm sát thực tế cấp độ ${ctx.position}, không cho điểm cao nếu câu trả lời sơ sài. Câu bị hết giờ thì trừ điểm clarity.${session.spoken ? '\nỨng viên trả lời bằng giọng nói được chuyển thành chữ tự động: bỏ qua lỗi chính tả hoặc dấu câu do máy nhận diện, chỉ đánh giá nội dung và cách diễn đạt.' : ''}
 Với mỗi câu hỏi chính:
 - "answer": chép NGUYÊN VĂN câu trả lời của ứng viên (gộp cả phần trả lời câu đào sâu), không tóm tắt.
@@ -160,5 +187,7 @@ ${transcript}`
     timedOut: false
   }))
   if (!answers.length) throw new Error('AI không trả về phần chấm điểm.')
-  return finalize(answers, data.summary, 'ai')
+  const result = finalize(answers, data.summary, 'ai')
+  result.reverse = session.reverse
+  return result
 }

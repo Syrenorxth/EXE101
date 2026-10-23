@@ -1,9 +1,8 @@
 // "Chế độ demo": người phỏng vấn theo kịch bản + chấm điểm theo quy tắc.
 // Dùng khi chưa cấu hình API key, hoặc khi cần trình chiếu không có mạng.
-import { QUESTIONS, SITUATION_CHANGES, PERSONAS, TOPICS, COMPANIES, MODEL_ANSWERS } from '../data/content.js'
+import { QUESTIONS, SITUATION_CHANGES, PERSONAS, TOPICS, COMPANIES, MODEL_ANSWERS, REVERSE_QUESTION } from '../data/content.js'
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
-const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5)
 const words = (t) => (t.trim() ? t.trim().split(/\s+/).length : 0)
 const clamp = (n) => Math.max(1, Math.min(10, Math.round(n)))
 
@@ -20,6 +19,10 @@ const FOLLOW_UPS = {
     vi: 'Em lấy một ví dụ cụ thể từ dự án em đã làm được không?',
     en: 'Can you give a concrete example from a project you worked on?'
   },
+  prevent: {
+    vi: 'Sau khi xử lý xong, em làm gì để lỗi đó không lặp lại?',
+    en: 'And afterwards, how would you make sure it does not happen again?'
+  },
   shorten: {
     vi: 'Em tóm lại ý chính trong hai câu giúp chị.',
     en: 'Please sum up your main point in two sentences.'
@@ -27,19 +30,36 @@ const FOLLOW_UPS = {
 }
 
 const CLOSING = {
-  vi: 'Cảm ơn bạn đã tham gia buổi phỏng vấn. Nhận xét chi tiết sẽ hiện ngay sau đây.',
-  en: 'Thank you for your time. Your detailed feedback is coming up next.'
+  vi: 'Cảm ơn bạn. Công ty sẽ liên hệ với bạn về các bước tiếp theo. Nhận xét chi tiết sẽ hiện ngay sau đây.',
+  en: 'Thank you. We will contact you about the next steps. Your detailed feedback is coming up next.'
 }
 
 const RESULT_WORDS = ['kết quả', 'cuối cùng', 'hoàn thành', 'tăng', 'giảm', 'nhờ đó', 'bài học', '%', 'result', 'finally', 'increased', 'reduced', 'improved', 'saved', 'achieved', 'completed', 'learned', 'outcome']
 const EXAMPLE_WORDS = ['ví dụ', 'chẳng hạn', 'như là', 'example', 'for instance', 'such as']
+const PREVENT_WORDS = ['báo', 'ghi lại', 'test', 'kiểm thử', 'lặp lại', 'rút kinh nghiệm', 'report', 'document', 'prevent', 'again', 'post-mortem', 'monitor']
+
+// Lập danh sách câu hỏi chính theo trình tự của chủ đề: mỗi bước chọn một câu,
+// tình huống thay đổi (nếu có) luôn ở cuối. Dùng chung cho chế độ demo và AI thật.
+export function buildPlan(topicId) {
+  const topic = TOPICS.find((t) => t.id === topicId)
+  const plan = topic.stages.map((stage) => {
+    const id = pick(stage.ids)
+    return { ...QUESTIONS[id], id, stage: stage.name, bridge: stage.bridge }
+  })
+  if (topic.situationChange) {
+    plan.push({
+      ...pick(SITUATION_CHANGES),
+      kind: 'situation',
+      stage: 'Tình huống thay đổi',
+      bridge: { vi: 'Câu cuối cùng.', en: 'One last question.' }
+    })
+  }
+  return plan
+}
 
 export function createMockSession(ctx) {
-  const topic = TOPICS.find((t) => t.id === ctx.topicId)
-  const ids = shuffle(topic.questionIds).slice(0, topic.take)
-  const plan = ids.map((id) => ({ ...QUESTIONS[id], id, kind: id.startsWith('t') ? 'tech' : 'behavior' }))
-  if (topic.situationChange) plan.push({ ...pick(SITUATION_CHANGES), kind: 'situation' })
-  return { ctx, plan, index: 0, followUpAsked: false, answers: plan.map(() => []) }
+  const plan = buildPlan(ctx.topicId)
+  return { ctx, plan, index: 0, followUpAsked: false, reverseAsked: false, reverse: null, answers: plan.map(() => []) }
 }
 
 function needsFollowUp(session, answer) {
@@ -50,18 +70,27 @@ function needsFollowUp(session, answer) {
   if (n < 25) return 'specific'
   if (persona === 'manager' && n > 150) return 'shorten'
   if (q.kind === 'tech' && persona === 'techlead' && !EXAMPLE_WORDS.some((w) => lower.includes(w))) return 'example'
+  if (q.kind === 'incident') return PREVENT_WORDS.some((w) => lower.includes(w)) ? null : 'prevent'
   if (q.kind !== 'tech' && !RESULT_WORDS.some((w) => lower.includes(w))) return 'result'
   return null
 }
+
+const questionMessage = (q, lang) => ({
+  role: 'interviewer',
+  kind: q.kind === 'situation' ? 'situation' : 'question',
+  text: q[lang],
+  ask: true
+})
 
 // Trả về danh sách tin nhắn mở đầu.
 export function mockStart(session) {
   const lang = session.ctx.language
   const persona = PERSONAS[session.ctx.personaId]
   const q = session.plan[0]
+  const intro = q.bridge ? `${persona.intro[lang]} ${q.bridge[lang]}` : persona.intro[lang]
   return [
-    { role: 'interviewer', kind: 'intro', text: persona.intro[lang] },
-    { role: 'interviewer', kind: q.kind === 'situation' ? 'situation' : 'question', text: q[lang], ask: true }
+    { role: 'interviewer', kind: 'intro', text: intro },
+    questionMessage(q, lang)
   ]
 }
 
@@ -69,6 +98,13 @@ export function mockStart(session) {
 export function mockReply(session, answer, timedOut, spoken = false) {
   const lang = session.ctx.language
   const persona = PERSONAS[session.ctx.personaId]
+
+  // Ứng viên vừa trả lời câu "Bạn có câu hỏi nào không?" → kết thúc buổi phỏng vấn.
+  if (session.reverseAsked) {
+    session.reverse = { text: answer, timedOut, spoken }
+    return { done: true, messages: [{ role: 'interviewer', kind: 'closing', text: CLOSING[lang] }] }
+  }
+
   session.answers[session.index].push({ text: answer, timedOut, spoken })
 
   if (!session.followUpAsked && !timedOut) {
@@ -81,15 +117,23 @@ export function mockReply(session, answer, timedOut, spoken = false) {
 
   session.index += 1
   session.followUpAsked = false
+  const ack = pick(persona.ack[lang])
+
+  // Hết câu hỏi chính → mời ứng viên hỏi lại, như cuối một buổi phỏng vấn thật.
   if (session.index >= session.plan.length) {
-    return { done: true, messages: [{ role: 'interviewer', kind: 'closing', text: CLOSING[lang] }] }
+    session.reverseAsked = true
+    return {
+      done: false,
+      messages: [{ role: 'interviewer', kind: 'reverse', text: `${ack} ${REVERSE_QUESTION[lang]}`, ask: true }]
+    }
   }
+
   const q = session.plan[session.index]
   return {
     done: false,
     messages: [
-      { role: 'interviewer', kind: 'ack', text: pick(persona.ack[lang]) },
-      { role: 'interviewer', kind: q.kind === 'situation' ? 'situation' : 'question', text: q[lang], ask: true }
+      { role: 'interviewer', kind: 'ack', text: q.bridge ? `${ack} ${q.bridge[lang]}` : ack },
+      questionMessage(q, lang)
     ]
   }
 }
@@ -107,6 +151,13 @@ const TECH = [
   [' là ', 'nghĩa là', 'dùng để', ' is ', 'means', 'used to'],
   EXAMPLE_WORDS,
   ['so với', 'khác', 'ưu điểm', 'nhược điểm', 'đánh đổi', 'trade-off', 'compared', 'whereas', 'however', 'nhưng']
+]
+// Khung xử lý sự cố (bài học chủ đề 2): khoanh vùng → tìm nguyên nhân → khắc phục → báo cáo.
+const INCIDENT = [
+  ['bình tĩnh', 'khoanh vùng', 'xác định', 'kiểm tra', 'tái hiện', 'stay calm', 'narrow', 'identify', 'check', 'reproduce'],
+  ['log', 'nguyên nhân', 'thay đổi gần nhất', 'deploy', 'cause', 'recent', 'latest change', 'root'],
+  ['sửa', 'rollback', 'khắc phục', 'hotfix', 'phiên bản ổn định', 'fix', 'roll back', 'restore', 'stable version'],
+  ['báo', 'trưởng nhóm', 'ghi lại', 'test', 'report', 'team lead', 'document', 'inform', 'prevent']
 ]
 const CONNECTORS = ['đầu tiên', 'thứ nhất', 'thứ hai', 'sau đó', 'tiếp theo', 'cuối cùng', 'first', 'second', 'then', 'next', 'finally']
 
@@ -196,6 +247,12 @@ export function analyzeSentences(q, text, lang = 'vi') {
   return issues.slice(0, 4)
 }
 
+const STRUCTURE_TIP = {
+  tech: 'Nên trả lời theo khung: định nghĩa → ví dụ → so sánh, đánh đổi.',
+  incident: 'Nên trả lời theo khung xử lý sự cố: khoanh vùng → tìm nguyên nhân (log, thay đổi gần nhất) → khắc phục hoặc rollback → báo cáo và phòng tránh.',
+  behavior: 'Nên sắp xếp theo STAR: bối cảnh → nhiệm vụ → hành động → kết quả.'
+}
+
 function scoreAnswer(q, text, timedOut, lang = 'vi') {
   const lower = ` ${text.toLowerCase()} `
   const n = words(text)
@@ -230,14 +287,15 @@ function scoreAnswer(q, text, timedOut, lang = 'vi') {
   // Structure
   const starHits = STAR.filter((g) => g.some((w) => lower.includes(w))).length
   const techHits = TECH.filter((g) => g.some((w) => lower.includes(w))).length
+  const incidentHits = INCIDENT.filter((g) => g.some((w) => lower.includes(w))).length
   const connector = CONNECTORS.some((w) => lower.includes(w)) ? 1 : 0
   const structure = q.kind === 'tech'
     ? clamp(2 + techHits * 2.5 + connector)
-    : clamp(2 + starHits * 2 + connector)
+    : q.kind === 'incident'
+      ? clamp(2 + incidentHits * 2 + connector)
+      : clamp(2 + starHits * 2 + connector)
   if (structure >= 7) strengths.push('Câu trả lời có cấu trúc rõ ràng.')
-  else improvements.push(q.kind === 'tech'
-    ? 'Nên trả lời theo khung: định nghĩa → ví dụ → so sánh, đánh đổi.'
-    : 'Nên sắp xếp theo STAR: bối cảnh → nhiệm vụ → hành động → kết quả.')
+  else improvements.push(STRUCTURE_TIP[q.kind] || STRUCTURE_TIP.behavior)
 
   if (!strengths.length) strengths.push('Bạn đã hoàn thành câu trả lời, đây là bước đầu tốt để luyện tiếp.')
   return { relevance, clarity, structure, strengths, improvements }
@@ -263,7 +321,9 @@ export function mockEvaluate(session) {
       ...scoreAnswer(q, text, timedOut, lang)
     }
   })
-  return finalize(answers, null, 'demo')
+  const result = finalize(answers, null, 'demo')
+  result.reverse = session.reverse
+  return result
 }
 
 export function finalize(answers, summary, mode) {

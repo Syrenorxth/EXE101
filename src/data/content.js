@@ -90,33 +90,81 @@ export const PERSONAS = {
   }
 }
 
+// Mỗi chủ đề gồm các bước (stages) theo đúng trình tự một buổi phỏng vấn thật.
+// Mỗi bước chọn ngẫu nhiên MỘT câu trong "ids" (các câu cùng loại), nên luyện lại
+// không bị trùng y hệt nhưng thứ tự luôn hợp lý.
+// "bridge": câu chuyển ý người phỏng vấn nói trước khi sang bước đó.
 export const TOPICS = [
   {
     id: 1,
     name: 'Khởi động & phỏng vấn hành vi',
     goal: 'Làm quen với cấu trúc buổi phỏng vấn và xây dựng sự tự tin.',
     defaultPersona: 'hr',
-    questionIds: ['b1', 'b2', 'b3', 'b4', 'b5'],
-    take: 3
+    stages: [
+      { name: 'Giới thiệu bản thân', ids: ['b1'] },
+      {
+        name: 'Kinh nghiệm và cách làm việc',
+        ids: ['b3', 'b4', 'b2'],
+        bridge: { vi: 'Tiếp theo là phần kinh nghiệm và cách làm việc.', en: "Now I'd like to hear more about your experience." }
+      },
+      {
+        name: 'Động lực ứng tuyển',
+        ids: ['b5'],
+        bridge: { vi: 'Câu tiếp theo về lý do ứng tuyển.', en: "Next, let's talk about why you applied." }
+      }
+    ]
   },
   {
     id: 2,
     name: 'Phỏng vấn chuyên môn & tình huống',
     goal: 'Vận dụng kiến thức đã học vào tình huống nghề nghiệp thực tế.',
     defaultPersona: 'techlead',
-    questionIds: ['t1', 't2', 't3', 't4', 't5'],
-    take: 3
+    lockedPersona: 'techlead', // Phỏng vấn chuyên môn luôn do Tech Lead đảm nhận
+    stages: [
+      {
+        name: 'Dự án và công nghệ đã dùng',
+        ids: ['t3'],
+        bridge: { vi: 'Bắt đầu từ dự án gần nhất nhé.', en: "Let's start with your latest project." }
+      },
+      {
+        name: 'Kiến thức nền tảng',
+        ids: ['t1', 't4'],
+        bridge: { vi: 'Tiếp theo là một câu hỏi kiến thức nền tảng.', en: 'Now a question on technical fundamentals.' }
+      },
+      {
+        name: 'Tình huống thực tế',
+        ids: ['t2', 't5'],
+        bridge: { vi: 'Tiếp theo là một tình huống thực tế khi đi làm.', en: "Next, a practical scenario you might face on the job." }
+      }
+    ]
   },
   {
     id: 3,
     name: 'Phỏng vấn tổng hợp',
     goal: 'Phản ứng và trình bày trong điều kiện gần với phỏng vấn thật.',
     defaultPersona: 'manager',
-    questionIds: ['b1', 't2', 'b3', 't3'],
-    take: 2,
-    situationChange: true
+    stages: [
+      { name: 'Giới thiệu bản thân', ids: ['b1'] },
+      {
+        name: 'Kinh nghiệm thực tế',
+        ids: ['b3', 't3'],
+        bridge: { vi: 'Tiếp theo là phần kinh nghiệm thực tế.', en: 'Next, tell me about your hands-on experience.' }
+      }
+    ],
+    situationChange: true // Tình huống thay đổi luôn là câu chính cuối cùng
   }
 ]
+
+// Câu hỏi cuối buổi: người phỏng vấn mời ứng viên hỏi lại (không tính điểm).
+export const REVERSE_QUESTION = {
+  vi: 'Phần câu hỏi của công ty đến đây là hết. Bạn có câu hỏi nào muốn hỏi lại không?',
+  en: "That's all from my side. Do you have any questions for me?"
+}
+
+export const REVERSE_TIP = {
+  vi: 'Nên chuẩn bị sẵn 1–2 câu hỏi về công việc, nhóm hoặc lộ trình học tập, ví dụ: “Một ngày làm việc của thực tập sinh trong nhóm diễn ra thế nào?” hoặc “Công ty đánh giá thực tập sinh dựa trên những tiêu chí nào?”. Trả lời “không có câu hỏi” dễ bị xem là chưa thật sự quan tâm.',
+  en: 'Nên chuẩn bị sẵn 1–2 câu hỏi về công việc, nhóm hoặc lộ trình học tập, ví dụ: “What does a typical day look like for a new member of your team?” hoặc “How do you evaluate interns and freshers here?”. Trả lời “No, I don\'t have any questions” dễ bị xem là chưa thật sự quan tâm.'
+}
 
 export const LESSONS = {
   1: {
@@ -206,62 +254,74 @@ export const LESSONS = {
 }
 
 // kw: từ khóa dùng để chấm Relevance ở chế độ demo.
+// kind: loại câu hỏi, quyết định khung chấm Structure ở chế độ demo
+//   behavior → STAR · tech → định nghĩa → ví dụ → so sánh · incident → khoanh vùng → nguyên nhân → khắc phục → báo cáo
 export const QUESTIONS = {
   b1: {
+    kind: 'behavior',
     vi: 'Bạn hãy giới thiệu ngắn gọn về bản thân.',
     en: 'Tell me about yourself.',
     kw: ['năm', 'ngành', 'học', 'dự án', 'kỹ năng', 'mục tiêu', 'thực tập', 'year', 'major', 'study', 'project', 'skill', 'goal', 'intern'],
     outline: 'Tên, năm học, chuyên ngành → 1 dự án hoặc kỹ năng nổi bật → vì sao ứng tuyển vị trí này.'
   },
   b2: {
+    kind: 'behavior',
     vi: 'Điểm mạnh và điểm yếu lớn nhất của bạn là gì?',
     en: 'What are your greatest strengths and weaknesses?',
     kw: ['điểm mạnh', 'điểm yếu', 'cải thiện', 'ví dụ', 'đang', 'strength', 'weakness', 'improve', 'example'],
     outline: 'Một điểm mạnh kèm ví dụ thật → một điểm yếu thật nhưng không chí mạng → bạn đang khắc phục thế nào.'
   },
   b3: {
+    kind: 'behavior',
     vi: 'Hãy kể về một dự án ở trường mà bạn tâm đắc nhất.',
     en: 'Tell me about a university project you are proud of.',
     kw: ['dự án', 'nhóm', 'vai trò', 'phụ trách', 'công nghệ', 'kết quả', 'project', 'team', 'role', 'technology', 'result'],
     outline: 'Dự án gì, mục tiêu → bạn phụ trách phần nào → khó khăn và cách giải quyết → kết quả, bài học.'
   },
   b4: {
+    kind: 'behavior',
     vi: 'Bạn xử lý thế nào khi có mâu thuẫn trong nhóm?',
     en: 'How do you handle conflicts in a team?',
     kw: ['mâu thuẫn', 'trao đổi', 'lắng nghe', 'thống nhất', 'ý kiến', 'kết quả', 'conflict', 'discuss', 'listen', 'agree', 'opinion'],
     outline: 'Một lần mâu thuẫn thật → bạn lắng nghe và trao đổi thế nào → nhóm thống nhất ra sao → kết quả.'
   },
   b5: {
-    vi: 'Vì sao bạn muốn thực tập ở công ty chúng tôi?',
-    en: 'Why do you want to intern at our company?',
+    kind: 'behavior',
+    vi: 'Vì sao bạn muốn ứng tuyển vào công ty chúng tôi?',
+    en: 'Why do you want to join our company?',
     kw: ['công ty', 'học hỏi', 'sản phẩm', 'phù hợp', 'mục tiêu', 'môi trường', 'company', 'learn', 'product', 'fit', 'goal'],
     outline: 'Điều bạn biết về công ty → điểm phù hợp với kỹ năng của bạn → bạn muốn học được gì.'
   },
   t1: {
+    kind: 'tech',
     vi: 'Hãy giải thích sự khác nhau giữa REST API và GraphQL.',
     en: 'Explain the difference between REST API and GraphQL.',
     kw: ['endpoint', 'query', 'client', 'server', 'dữ liệu', 'data', 'schema', 'over-fetching', 'http', 'resource'],
     outline: 'REST: nhiều endpoint theo resource → GraphQL: một endpoint, client chọn trường cần lấy → khi nào nên dùng cái nào.'
   },
   t2: {
+    kind: 'incident',
     vi: 'Ứng dụng của bạn bỗng trả về lỗi 500 ngay trước buổi demo. Bạn sẽ làm gì?',
     en: 'Your application suddenly returns a 500 error right before the demo. What would you do?',
     kw: ['log', 'lỗi', 'server', 'kiểm tra', 'rollback', 'debug', 'nguyên nhân', 'báo', 'check', 'cause', 'fix', 'error'],
     outline: 'Khoanh vùng lỗi → đọc log, xem thay đổi gần nhất → sửa nhanh hoặc rollback → báo trưởng nhóm, ghi lại nguyên nhân.'
   },
   t3: {
-    vi: 'Vì sao bạn chọn bộ công nghệ này cho dự án gần nhất?',
-    en: 'Why did you choose this tech stack for your latest project?',
+    kind: 'tech',
+    vi: 'Bạn hãy kể về bộ công nghệ đã dùng trong dự án gần nhất. Vì sao bạn chọn nó?',
+    en: 'Walk me through the tech stack of your latest project. Why did you choose it?',
     kw: ['lý do', 'hiệu năng', 'cộng đồng', 'nhóm', 'yêu cầu', 'so sánh', 'reason', 'performance', 'community', 'team', 'requirement', 'compare'],
     outline: 'Yêu cầu của dự án → các lựa chọn đã cân nhắc → lý do chọn (năng lực nhóm, hiệu năng, cộng đồng) → điều sẽ làm khác nếu làm lại.'
   },
   t4: {
+    kind: 'tech',
     vi: 'Giải thích lập trình hướng đối tượng (OOP) và cho một ví dụ.',
     en: 'Explain object-oriented programming (OOP) and give an example.',
     kw: ['class', 'object', 'kế thừa', 'đóng gói', 'đa hình', 'trừu tượng', 'inheritance', 'encapsulation', 'polymorphism', 'abstraction'],
     outline: 'Khái niệm class/object → bốn tính chất → ví dụ cụ thể từ dự án của bạn.'
   },
   t5: {
+    kind: 'behavior',
     vi: 'Bạn và một thành viên bất đồng về cách thiết kế database. Bạn xử lý thế nào?',
     en: 'You and a teammate disagree about the database design. How do you handle it?',
     kw: ['thiết kế', 'bảng', 'lý do', 'so sánh', 'thống nhất', 'ưu', 'nhược', 'design', 'table', 'compare', 'agree', 'trade-off'],

@@ -284,3 +284,7 @@ td.num { font-variant-numeric: tabular-nums; text-align: right; }
 .outline { margin: 0; font-size: 14px; color: var(--muted); }
 .tag.inline { margin-left: 8px; vertical-align: middle; font-size: 11px; }
 .tag.warn { background: var(--mid-soft); color: var(--mid); }
+
+/* Câu hỏi cuối buổi (không tính điểm) */
+.reverse-box { margin-top: 16px; }
+.reverse-box .quote { margin-bottom: 8px; }

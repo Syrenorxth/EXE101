@@ -31,8 +31,11 @@ export default function App() {
   const [result, setResult] = useState(null)
   const [sessionKey, setSessionKey] = useState(0)
 
-  useEffect(() => saveProgress(progress), [progress])
-  useEffect(() => window.scrollTo(0, 0), [screen])
+  // Hàm trong useEffect không được trả về giá trị (trừ hàm dọn dẹp).
+  // Chrome bản mới cho window.scrollTo trả về Promise, nếu viết gọn
+  // "() => window.scrollTo(0, 0)" thì React sẽ báo lỗi và trang bị trắng.
+  useEffect(() => { saveProgress(progress) }, [progress])
+  useEffect(() => { window.scrollTo(0, 0) }, [screen])
 
   const update = (patch) => setSetup((s) => ({ ...s, ...patch }))
 

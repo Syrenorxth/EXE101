@@ -72,6 +72,18 @@ API key chỉ nằm ở máy chủ dev của Vite (xem `vite.config.js`), trình
 Chọn ngành → Chọn doanh nghiệp mô phỏng → Thiết lập (vị trí, chủ đề, người phỏng vấn, ngôn ngữ, giới hạn thời gian, giọng nói)
 → Học trước → Phỏng vấn (gõ phím hoặc nói) → Nhận phản hồi (3 tiêu chí, lỗi từng câu, câu trả lời mẫu) → Tích lũy điểm rèn luyện → Mở rộng lộ trình.
 
+### Trình tự câu hỏi (giống một buổi phỏng vấn thật)
+
+| Chủ đề | Thứ tự câu hỏi |
+|---|---|
+| 1. Khởi động & hành vi (HR) | Giới thiệu bản thân → 1 câu kinh nghiệm (dự án / mâu thuẫn nhóm / điểm mạnh-yếu) → Vì sao chọn công ty |
+| 2. Chuyên môn (luôn do Tech Lead phỏng vấn) | Công nghệ trong dự án gần nhất → 1 câu kiến thức (REST/GraphQL hoặc OOP) → 1 tình huống (lỗi 500 hoặc bất đồng thiết kế database) |
+| 3. Tổng hợp (Manager) | Giới thiệu ngắn → Dự án hoặc công nghệ đã dùng → Tình huống thay đổi |
+
+- Mỗi bước chọn ngẫu nhiên một câu cùng loại, nên luyện lại không bị trùng y hệt nhưng thứ tự luôn hợp lý.
+- Người phỏng vấn có câu chuyển ý giữa các phần, và cuối buổi hỏi "Do you have any questions for me?" (không tính điểm, có góp ý riêng).
+- Muốn đổi trình tự hoặc thêm câu hỏi: sửa `stages` trong `src/data/content.js`.
+
 - PixelStart mở sẵn; NovaTech cần 60 điểm rèn luyện; GlobalCore cần 150 điểm.
 - Chủ đề 2 mở khi xong chủ đề 1, chủ đề 3 mở khi xong chủ đề 2.
 - Khi thuyết trình: vào **Tiến độ** → bật **Chế độ trình bày** để mở khóa toàn bộ.
