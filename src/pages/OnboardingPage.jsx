@@ -58,7 +58,7 @@ export default function OnboardingPage() {
             <p className="muted">Thông tin giúp PalSpeak chọn câu hỏi phù hợp và kết nối với nhà trường của bạn.</p>
             <label className="field">
               <span>Trường</span>
-              <input value={form.school} onChange={(e) => set('school', e.target.value)} placeholder="Ví dụ: Trường Đại học Minh Long" />
+              <input value={form.school} onChange={(e) => set('school', e.target.value)} placeholder="Ví dụ: Đại học FPT" />
             </label>
             <div className="field-grid">
               <label className="field">
@@ -107,7 +107,7 @@ export default function OnboardingPage() {
               </label>
               <label className="field">
                 <span>Mục tiêu của bạn</span>
-                <input value={form.target} onChange={(e) => set('target', e.target.value)} placeholder="Ví dụ: Thực tập backend" />
+                <input value={form.target} onChange={(e) => set('target', e.target.value)} placeholder="Ví dụ: Thực tập fullstack" />
               </label>
             </div>
           </div>

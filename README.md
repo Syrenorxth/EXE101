@@ -85,7 +85,8 @@ Không cần tạo tài khoản, không cần mật khẩu:
 | Góc nhìn **sinh viên** | Trang chủ → **Xem bản demo**, hoặc trang Đăng nhập → **Tài khoản sinh viên demo** |
 | Góc nhìn **nhà trường** | Trang Đăng nhập → **Tài khoản nhà trường demo** |
 
-- Tài khoản sinh viên demo (Nguyễn Minh Khoa) đã có sẵn **4 buổi luyện mẫu** trong tuần qua, nên trang Tổng quan, Lịch sử có biểu đồ ngay.
+- Tài khoản sinh viên demo là **Trần Hà Minh**, sinh viên năm 4 Đại học FPT, ứng tuyển Fresher (mục tiêu: thực tập fullstack).
+  Tài khoản đã có sẵn **4 buổi luyện mẫu** trong tuần qua (3 buổi ở PixelStart, 1 buổi Fresher ở NovaTech), nên trang Tổng quan, Lịch sử có biểu đồ ngay.
   NovaTech đã mở, GlobalCore còn khóa, để thấy được cơ chế mở khóa.
 - Muốn mở khóa toàn bộ doanh nghiệp và chủ đề khi thuyết trình: **Hồ sơ & cài đặt** → bật **Chế độ trình bày**.
 - Nút mặt trời / mặt trăng ở góc trên bên phải dùng để đổi **giao diện sáng / tối**.

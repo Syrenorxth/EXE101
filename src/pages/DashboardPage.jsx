@@ -18,8 +18,11 @@ const CRIT_TIPS = {
 }
 
 // Gợi ý buổi luyện tiếp theo: chủ đề đầu tiên chưa làm, nếu đã làm hết thì chủ đề điểm thấp nhất.
-function suggest(progress) {
-  const open = COMPANIES.filter((c) => isCompanyUnlocked(progress, c))
+// Ưu tiên doanh nghiệp tuyển đúng vị trí trong hồ sơ (Intern/Fresher).
+function suggest(progress, position) {
+  const unlocked = COMPANIES.filter((c) => isCompanyUnlocked(progress, c))
+  const fit = unlocked.filter((c) => c.positions.includes(position))
+  const open = [...fit, ...unlocked.filter((c) => !fit.includes(c))]
   for (const c of open) {
     for (const t of TOPICS) {
       if (isTopicUnlocked(progress, c.id, t.id) && progress.done[doneKey(c.id, t.id)] === undefined) return { company: c, topic: t, reason: 'Chủ đề tiếp theo trong lộ trình' }
@@ -37,7 +40,7 @@ export default function DashboardPage() {
   const { user, progress } = useApp()
   const stats = statsOf(progress)
   const level = levelOf(progress.points)
-  const next = suggest(progress)
+  const next = suggest(progress, user.position)
   const countdown = daysUntil(user.interviewDate)
   const chartPoints = [...progress.history].reverse().slice(-10).map((h) => ({ label: fmtShort(h.at), value: h.avg }))
   const weakest = stats.sessions ? Object.entries(stats.criteria).sort((a, b) => a[1] - b[1])[0] : null

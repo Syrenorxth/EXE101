@@ -11,23 +11,27 @@ const SESSION = 'palspeak:session'
 
 export const DEFAULT_PREFS = { language: 'en', voice: true, timeChallenge: true }
 
+// Tăng số này mỗi khi sửa thông tin hoặc dữ liệu mẫu của tài khoản demo:
+// trình duyệt đã có tài khoản demo cũ sẽ được cập nhật ở lần vào demo tiếp theo.
+const DEMO_VERSION = 2
+
 export const DEMO_ACCOUNTS = {
   student: {
     email: 'demo.sinhvien@palspeak.vn',
-    name: 'Nguyễn Minh Khoa',
+    name: 'Trần Hà Minh',
     role: 'student',
-    school: 'Trường Đại học Minh Long',
+    school: 'Đại học FPT',
     major: 'Kỹ thuật phần mềm',
-    year: 'Năm 3',
-    position: 'Intern',
-    target: 'Thực tập backend tại công ty phần mềm',
+    year: 'Năm 4',
+    position: 'Fresher',
+    target: 'Thực tập fullstack',
     classCode: 'KTPM-K18'
   },
   school: {
     email: 'demo.nhatruong@palspeak.vn',
     name: 'Trần Thu Hà',
     role: 'school',
-    school: 'Trường Đại học Minh Long',
+    school: 'Đại học FPT',
     title: 'Trưởng phòng Hỗ trợ việc làm & Quan hệ doanh nghiệp'
   }
 }
@@ -99,9 +103,14 @@ export async function login({ email, password }) {
 export async function loginDemo(role) {
   await delay(300)
   const demo = DEMO_ACCOUNTS[role]
-  let user = readUsers().find((u) => u.email === demo.email)
+  const users = readUsers()
+  let user = users.find((u) => u.email === demo.email)
   if (!user) {
-    user = createUser({ ...demo, onboarded: true, demo: true }, null)
+    user = createUser({ ...demo, onboarded: true, demo: true, demoVersion: DEMO_VERSION }, null)
+    if (role === 'student') saveProgress(user.id, seedDemoProgress())
+  } else if (user.demoVersion !== DEMO_VERSION) {
+    Object.assign(user, demo, { demoVersion: DEMO_VERSION })
+    writeUsers(users)
     if (role === 'student') saveProgress(user.id, seedDemoProgress())
   }
   storage.set(SESSION, user.id)
