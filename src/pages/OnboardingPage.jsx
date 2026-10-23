@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Brand } from '../components/Brand.jsx'
 import Icon from '../components/Icons.jsx'
+import Mascot from '../components/Mascot.jsx'
 import { navigate } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { COMPANIES } from '../data/content.js'
@@ -8,6 +9,7 @@ import { COMPANIES } from '../data/content.js'
 const YEARS = ['Năm 2', 'Năm 3', 'Năm 4', 'Đã tốt nghiệp']
 const MAJORS = ['Kỹ thuật phần mềm', 'Hệ thống thông tin', 'Khoa học máy tính', 'Trí tuệ nhân tạo', 'An toàn thông tin', 'Khác']
 const STEPS = ['Về bạn', 'Mục tiêu', 'Tùy chọn']
+const SAY = ['Chào bạn, mình là Pal!', 'Mục tiêu rõ thì luyện nhanh hơn!', 'Sắp xong rồi đó!']
 
 export default function OnboardingPage() {
   const { user, updateUser, toast } = useApp()
@@ -41,6 +43,7 @@ export default function OnboardingPage() {
         <button className="link-btn" onClick={finish} disabled={busy}>Bỏ qua</button>
       </header>
       <div className="onboard-card card">
+        <Mascot size={96} className="onboard-mascot" say={SAY[step]} />
         <ol className="onboard-steps">
           {STEPS.map((s, i) => (
             <li key={s} className={i < step ? 'done' : i === step ? 'current' : ''}>

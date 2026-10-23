@@ -3,6 +3,7 @@ import { PublicHeader, PublicFooter } from '../components/Layout.jsx'
 import { Avatar } from '../components/Brand.jsx'
 import { ScoreRing, RadarChart } from '../components/Charts.jsx'
 import Icon from '../components/Icons.jsx'
+import Mascot, { Sparkles } from '../components/Mascot.jsx'
 import { Link, navigate } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { COMPANIES, PERSONAS } from '../data/content.js'
@@ -97,6 +98,7 @@ export default function LandingPage() {
 
       <section className="hero">
         <div className="hero-bg" aria-hidden="true" />
+        <Sparkles count={18} />
         <div className="public-inner hero-grid">
           <div className="hero-copy">
             <span className="hero-eyebrow"><Icon name="sparkles" size={14} /> Luyện phỏng vấn Intern & Fresher ngành IT</span>
@@ -310,7 +312,8 @@ export default function LandingPage() {
 
       <section className="cta-band">
         <div className="public-inner cta-inner">
-          <div>
+          <Mascot size={120} className="cta-mascot" />
+          <div className="cta-copy">
             <h2>Buổi phỏng vấn tiếp theo của bạn là khi nào?</h2>
             <p>Bắt đầu luyện ngay hôm nay, chỉ mất 10 phút cho buổi đầu tiên.</p>
           </div>

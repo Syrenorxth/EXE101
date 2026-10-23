@@ -1,6 +1,7 @@
 // Thông báo nổi (toast) và hộp xác nhận dùng chung.
 import { useEffect } from 'react'
 import Icon from './Icons.jsx'
+import Mascot from './Mascot.jsx'
 import { useApp } from '../context/AppContext.jsx'
 
 const TOAST_ICON = { info: 'info', success: 'check', warn: 'alert', badge: 'award' }
@@ -62,10 +63,10 @@ export function Confirm({ open, title, body, confirmLabel = 'Xác nhận', dange
   )
 }
 
-export function EmptyState({ icon = 'info', title, children, action }) {
+export function EmptyState({ icon = 'info', mascot = false, title, children, action }) {
   return (
     <div className="empty">
-      <span className="empty-icon"><Icon name={icon} size={26} /></span>
+      {mascot ? <Mascot size={110} /> : <span className="empty-icon"><Icon name={icon} size={26} /></span>}
       <h3>{title}</h3>
       {children && <p className="muted">{children}</p>}
       {action}

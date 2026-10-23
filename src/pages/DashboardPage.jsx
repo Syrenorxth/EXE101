@@ -3,6 +3,7 @@ import { LineChart, RadarChart, Meter } from '../components/Charts.jsx'
 import { tone } from '../components/ScoreBar.jsx'
 import { EmptyState } from '../components/Feedback.jsx'
 import Icon from '../components/Icons.jsx'
+import Mascot from '../components/Mascot.jsx'
 import { Link } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { COMPANIES, TOPICS, PERSONAS } from '../data/content.js'
@@ -74,6 +75,7 @@ export default function DashboardPage() {
 
       <div className="dash-grid">
         <section className="card next-card">
+          <Mascot size={120} className="next-mascot" say={stats.sessions ? 'Luyện tiếp nào!' : 'Bắt đầu thôi!'} />
           <span className="kicker">Buổi luyện được gợi ý</span>
           {next ? (
             <>
@@ -112,7 +114,7 @@ export default function DashboardPage() {
       {stats.sessions === 0 ? (
         <div className="card">
           <EmptyState
-            icon="mic"
+            mascot
             title="Chưa có buổi phỏng vấn nào"
             action={<Link to="/practice" className="btn btn-primary">Bắt đầu buổi đầu tiên</Link>}
           >

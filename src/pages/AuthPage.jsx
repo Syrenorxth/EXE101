@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Brand } from '../components/Brand.jsx'
 import { ThemeToggle } from '../components/Layout.jsx'
 import Icon from '../components/Icons.jsx'
+import Mascot, { FloatingChips, Sparkles } from '../components/Mascot.jsx'
 import { Link } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
 
@@ -44,7 +45,12 @@ export default function AuthPage({ mode }) {
     <div className="auth">
       <aside className="auth-side">
         <div className="hero-bg" aria-hidden="true" />
+        <Sparkles />
         <Brand light />
+        <div className="auth-scene">
+          <Mascot size={190} say={isLogin ? 'Chào bạn quay lại!' : 'Mình là Pal, cùng luyện nhé!'} />
+          <FloatingChips items={[['mic', 'Tell me about yourself'], ['star', 'Structure 8.5/10'], ['award', 'Huy hiệu mới!']]} />
+        </div>
         <div className="auth-side-copy">
           <h2>Mỗi buổi luyện là một lần bớt run khi gặp nhà tuyển dụng thật.</h2>
           <ul className="ticks on-dark">
@@ -62,6 +68,7 @@ export default function AuthPage({ mode }) {
           <ThemeToggle />
         </div>
         <div className="auth-card">
+          <Mascot size={84} className="auth-mobile-mascot" wave={false} />
           <h1>{isLogin ? 'Đăng nhập' : 'Tạo tài khoản'}</h1>
           <p className="muted">
             {isLogin ? 'Chưa có tài khoản? ' : 'Đã có tài khoản? '}
