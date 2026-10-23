@@ -1,29 +1,28 @@
 import { CAREERS } from '../data/content.js'
+import Icon from '../components/Icons.jsx'
+
+const ICON = { it: 'code', marketing: 'trend', finance: 'coins', sales: 'briefcase' }
 
 export default function CareerScreen({ onPick }) {
   return (
     <section className="screen">
-      <div className="intro">
-        <p className="eyebrow">Luyện phỏng vấn Intern &amp; Fresher</p>
-        <h1>Tập phỏng vấn với AI trước khi gặp nhà tuyển dụng thật</h1>
-        <p className="lead">
-          Chọn ngành, chọn doanh nghiệp, học nhanh cách trả lời rồi vào phỏng vấn mô phỏng.
-          Sau mỗi buổi, bạn nhận điểm theo ba tiêu chí và gợi ý để trả lời tốt hơn.
-        </p>
+      <div className="screen-intro">
+        <h2>Bạn muốn luyện phỏng vấn ngành nào?</h2>
+        <p className="muted">Bản MVP tập trung vào ngành Công nghệ thông tin. Các ngành khác sẽ mở ở giai đoạn sau.</p>
       </div>
-
-      <h2 className="section-title">Bạn muốn luyện phỏng vấn ngành nào?</h2>
       <div className="grid grid-4">
         {CAREERS.map((c) => (
           <button
             key={c.id}
-            className={`card choice ${c.active ? '' : 'disabled'}`}
+            className={`card career ${c.active ? '' : 'disabled'}`}
             onClick={() => c.active && onPick(c.id)}
             disabled={!c.active}
           >
-            <span className="choice-title">{c.name}</span>
-            <span className="choice-desc">{c.desc}</span>
-            <span className={`tag ${c.active ? 'tag-ok' : ''}`}>{c.active ? 'Có trong MVP' : 'Sau MVP'}</span>
+            <span className="career-icon"><Icon name={ICON[c.id] || 'briefcase'} size={26} /></span>
+            <span className="career-title">{c.name}</span>
+            <span className="career-desc">{c.desc}</span>
+            <span className={`tag ${c.active ? 'tag-ok' : ''}`}>{c.active ? 'Đang mở' : 'Sắp ra mắt'}</span>
+            {c.active && <span className="career-go">Chọn <Icon name="arrowRight" size={16} /></span>}
           </button>
         ))}
       </div>

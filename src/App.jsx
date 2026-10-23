@@ -1,152 +1,63 @@
-import { useEffect, useState } from 'react'
-import Header from './components/Header.jsx'
-import Stepper from './components/Stepper.jsx'
-import CareerScreen from './screens/CareerScreen.jsx'
-import CompanyScreen from './screens/CompanyScreen.jsx'
-import SetupScreen from './screens/SetupScreen.jsx'
-import LearnScreen from './screens/LearnScreen.jsx'
-import InterviewScreen from './screens/InterviewScreen.jsx'
-import FeedbackScreen from './screens/FeedbackScreen.jsx'
-import ProgressScreen from './screens/ProgressScreen.jsx'
-import { TOPICS } from './data/content.js'
-import { AI_ENABLED } from './lib/aiEngine.js'
-import { loadProgress, saveProgress, completeLesson, recordSession, pointsFor, resetProgress } from './lib/progress.js'
-
-const STEP_OF = { career: 0, companies: 1, setup: 2, learn: 3, interview: 4, feedback: 5 }
+import { useEffect } from 'react'
+import { AppProvider, useApp } from './context/AppContext.jsx'
+import { Toaster } from './components/Feedback.jsx'
+import { useRoute, Redirect } from './router.jsx'
+import LandingPage from './pages/LandingPage.jsx'
+import AuthPage from './pages/AuthPage.jsx'
+import OnboardingPage from './pages/OnboardingPage.jsx'
+import DashboardPage from './pages/DashboardPage.jsx'
+import PracticePage from './pages/PracticePage.jsx'
+import HistoryPage from './pages/HistoryPage.jsx'
+import SessionPage from './pages/SessionPage.jsx'
+import LibraryPage from './pages/LibraryPage.jsx'
+import AchievementsPage from './pages/AchievementsPage.jsx'
+import ProfilePage from './pages/ProfilePage.jsx'
+import SchoolPage from './pages/SchoolPage.jsx'
+import TermsPage from './pages/TermsPage.jsx'
+import NotFoundPage from './pages/NotFoundPage.jsx'
 
 export default function App() {
-  const [screen, setScreen] = useState('career')
-  const [progress, setProgress] = useState(loadProgress)
-  const [setup, setSetup] = useState({
-    careerId: 'it',
-    companyId: null,
-    position: 'Intern',
-    topicId: 1,
-    personaId: 'hr',
-    language: 'en',
-    timeChallenge: true,
-    voice: true,
-    mode: AI_ENABLED ? 'ai' : 'demo'
-  })
-  const [result, setResult] = useState(null)
-  const [sessionKey, setSessionKey] = useState(0)
+  return (
+    <AppProvider>
+      <Routes />
+      <Toaster />
+    </AppProvider>
+  )
+}
+
+const homeOf = (user) => (user.role === 'school' ? '/school' : '/dashboard')
+
+function Routes() {
+  const { path, search, query } = useRoute()
+  const { user } = useApp()
+  const [first, second] = path.split('/').filter(Boolean)
 
   // Hàm trong useEffect không được trả về giá trị (trừ hàm dọn dẹp).
   // Chrome bản mới cho window.scrollTo trả về Promise, nếu viết gọn
   // "() => window.scrollTo(0, 0)" thì React sẽ báo lỗi và trang bị trắng.
-  useEffect(() => { saveProgress(progress) }, [progress])
-  useEffect(() => { window.scrollTo(0, 0) }, [screen])
+  useEffect(() => { window.scrollTo(0, 0) }, [path])
 
-  const update = (patch) => setSetup((s) => ({ ...s, ...patch }))
-
-  const chooseCompany = (company) => {
-    const position = company.positions.includes(setup.position) ? setup.position : company.positions[0]
-    update({ companyId: company.id, position, topicId: 1, personaId: TOPICS[0].defaultPersona })
-    setScreen('setup')
+  // Trang công khai
+  if (!first) return <LandingPage />
+  if (first === 'terms') return <TermsPage />
+  if (first === 'login' || first === 'register') {
+    if (user) return <Redirect to={query.next || homeOf(user)} />
+    return <AuthPage mode={first} />
   }
 
-  const finishLesson = () => {
-    const { progress: next } = completeLesson(progress, setup.topicId)
-    setProgress(next)
-    startInterview()
+  // Các trang còn lại cần đăng nhập
+  if (!user) return <Redirect to={`/login?next=${encodeURIComponent(path)}`} />
+  if (user.role === 'student' && !user.onboarded && first !== 'onboarding') return <Redirect to="/onboarding" />
+
+  switch (first) {
+    case 'onboarding': return <OnboardingPage />
+    case 'dashboard': return user.role === 'school' ? <Redirect to="/school" /> : <DashboardPage />
+    case 'practice': return <PracticePage key={search} query={query} />
+    case 'history': return second ? <SessionPage id={second} /> : <HistoryPage />
+    case 'library': return <LibraryPage tab={query.tab} />
+    case 'achievements': return <AchievementsPage />
+    case 'profile': return <ProfilePage />
+    case 'school': return user.role === 'school' ? <SchoolPage tab={second || 'overview'} /> : <Redirect to="/dashboard" />
+    default: return <NotFoundPage />
   }
-
-  const startInterview = () => {
-    setSessionKey((k) => k + 1)
-    setScreen('interview')
-  }
-
-  const finishInterview = (evaluation) => {
-    const earned = pointsFor(evaluation.overall.avg, setup.timeChallenge)
-    const before = progress
-    const after = recordSession(progress, {
-      companyId: setup.companyId,
-      topicId: setup.topicId,
-      position: setup.position,
-      personaId: setup.personaId,
-      avg: evaluation.overall.avg,
-      earned,
-      mode: evaluation.mode
-    })
-    setProgress(after)
-    setResult({ ...evaluation, earned, pointsBefore: before.points, pointsAfter: after.points })
-    setScreen('feedback')
-  }
-
-  return (
-    <div className="app">
-      <Header
-        points={progress.points}
-        mode={setup.mode}
-        onHome={() => setScreen('career')}
-        onRoadmap={() => setScreen(setup.companyId ? 'companies' : 'career')}
-        onProgress={() => setScreen('progress')}
-      />
-      {STEP_OF[screen] !== undefined && <Stepper current={STEP_OF[screen]} />}
-
-      <main className="main">
-        {screen === 'career' && (
-          <CareerScreen
-            onPick={(careerId) => { update({ careerId }); setScreen('companies') }}
-          />
-        )}
-        {screen === 'companies' && (
-          <CompanyScreen progress={progress} onPick={chooseCompany} onBack={() => setScreen('career')} />
-        )}
-        {screen === 'setup' && (
-          <SetupScreen
-            setup={setup}
-            progress={progress}
-            onChange={update}
-            onLearn={() => setScreen('learn')}
-            onSkip={startInterview}
-            onBack={() => setScreen('companies')}
-          />
-        )}
-        {screen === 'learn' && (
-          <LearnScreen
-            topicId={setup.topicId}
-            alreadyDone={Boolean(progress.lessons[setup.topicId])}
-            onDone={finishLesson}
-            onBack={() => setScreen('setup')}
-          />
-        )}
-        {screen === 'interview' && (
-          <InterviewScreen
-            key={sessionKey}
-            setup={setup}
-            onFinish={finishInterview}
-            onExit={() => setScreen('setup')}
-            onSwitchToDemo={() => { update({ mode: 'demo' }); setSessionKey((k) => k + 1) }}
-          />
-        )}
-        {screen === 'feedback' && result && (
-          <FeedbackScreen
-            result={result}
-            setup={setup}
-            progress={progress}
-            onRetry={startInterview}
-            onNextTopic={() => {
-              const next = Math.min(3, setup.topicId + 1)
-              update({ topicId: next, personaId: TOPICS[next - 1].defaultPersona })
-              setScreen('setup')
-            }}
-            onRoadmap={() => setScreen('companies')}
-          />
-        )}
-        {screen === 'progress' && (
-          <ProgressScreen
-            progress={progress}
-            onTogglePresenter={() => setProgress((p) => ({ ...p, presenter: !p.presenter }))}
-            onReset={() => setProgress(resetProgress())}
-            onBack={() => setScreen(setup.companyId ? 'companies' : 'career')}
-          />
-        )}
-      </main>
-
-      <footer className="footer">
-        PalSpeak MVP · Dự án EXE101 · Điểm số do AI đưa ra chỉ phục vụ mục đích học tập, không phải đánh giá chính thức về năng lực tuyển dụng.
-      </footer>
-    </div>
-  )
 }

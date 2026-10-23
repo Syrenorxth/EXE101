@@ -1,7 +1,8 @@
 # PalSpeak – Bản demo MVP
 
 Nền tảng luyện phỏng vấn xin việc bằng AI cho sinh viên IT (dự án EXE101).
-Bản demo viết bằng **React + Vite**.
+Bản demo viết bằng **React + Vite**, giao diện tông tím – cam (có chế độ sáng/tối, chạy được trên điện thoại).
+Đây là bản "giống hoàn chỉnh": có đủ các trang của một sản phẩm thật, nhưng tài khoản và dữ liệu vẫn lưu trên trình duyệt (chưa có máy chủ).
 
 ## 1. Cài đặt (làm một lần)
 
@@ -23,6 +24,9 @@ Trình duyệt sẽ tự mở `http://localhost:5173`. Nếu không tự mở th
 
 Muốn tắt: bấm `Ctrl + C` trong Terminal.
 
+**Vào nhanh khi trình bày:** ở trang chủ bấm **Xem bản demo** (tài khoản sinh viên mẫu, đã có sẵn 4 buổi luyện),
+hoặc ở trang Đăng nhập chọn **Tài khoản nhà trường demo**. Không cần mật khẩu.
+
 ## 3. Hai chế độ chấm
 
 | Chế độ | Khi nào dùng | Cần gì |
@@ -35,13 +39,13 @@ Chế độ demo: người phỏng vấn đi theo kịch bản có sẵn, chấm
 ### Ngôn ngữ phỏng vấn
 
 Mặc định hội thoại phỏng vấn bằng **tiếng Anh** (câu hỏi, câu đào sâu, câu trả lời mẫu, giọng đọc en-US). Phần nhận xét vẫn bằng tiếng Việt để dễ hiểu.
-Có thể đổi sang tiếng Việt ở bước **Thiết lập**.
+Có thể đổi sang tiếng Việt ở bước **Thiết lập** hoặc đặt mặc định trong **Hồ sơ & cài đặt**.
 
 ### Giọng nói (Speech-to-Text và Text-to-Speech)
 
 Dùng Web Speech API có sẵn trong trình duyệt, miễn phí, không cần API key hay cài thêm gì.
 
-- **Text-to-Speech:** người phỏng vấn tự đọc câu hỏi thành tiếng (bật/tắt ở bước Thiết lập). Mỗi câu hỏi có nút **Nghe** để nghe lại. Đồng hồ tạm dừng trong lúc đọc.
+- **Text-to-Speech:** người phỏng vấn tự đọc câu hỏi thành tiếng (bật/tắt ở bước Thiết lập). Có nút **Nghe lại**. Đồng hồ tạm dừng trong lúc đọc.
 - **Speech-to-Text:** bấm **Nói câu trả lời** để trả lời bằng micro, chữ hiện dần vào ô nhập, có thể sửa lại trước khi gửi.
 - Micro cần mở bằng **Chrome hoặc Edge** và cho phép trình duyệt dùng micro ở lần đầu. Trình duyệt khác vẫn gõ phím bình thường.
 
@@ -62,15 +66,27 @@ Sau buổi phỏng vấn, mỗi câu hỏi có:
    - OpenAI: lấy key tại platform.openai.com, giữ nguyên `AI_BASE_URL` và `AI_MODEL=gpt-4o-mini`.
    - Google Gemini (có gói miễn phí): lấy key tại aistudio.google.com, dùng 3 dòng ở "Cách 2" trong file.
      Kiểm tra lại tên model đang được hỗ trợ trên trang của Google nếu báo lỗi model.
-3. Tắt và chạy lại `npm run dev`. Góc trên bên phải sẽ hiện **AI thật**.
+3. Tắt và chạy lại `npm run dev`. Thanh trên cùng sẽ hiện **AI sẵn sàng**.
 
 API key chỉ nằm ở máy chủ dev của Vite (xem `vite.config.js`), trình duyệt không nhìn thấy.
 **Không** đưa file `.env` lên GitHub hay gửi cho người khác.
 
-## 4. Luồng sử dụng
+## 4. Các trang
 
-Chọn ngành → Chọn doanh nghiệp mô phỏng → Thiết lập (vị trí, chủ đề, người phỏng vấn, ngôn ngữ, giới hạn thời gian, giọng nói)
-→ Học trước → Phỏng vấn (gõ phím hoặc nói) → Nhận phản hồi (3 tiêu chí, lỗi từng câu, câu trả lời mẫu) → Tích lũy điểm rèn luyện → Mở rộng lộ trình.
+| Trang | Địa chỉ | Nội dung |
+|---|---|---|
+| Trang chủ | `#/` | Giới thiệu sản phẩm, tính năng, bảng giá, hỏi đáp |
+| Đăng nhập / Đăng ký | `#/login`, `#/register` | Tài khoản sinh viên hoặc nhà trường, có tài khoản demo |
+| Tạo hồ sơ | `#/onboarding` | Trường, chuyên ngành, vị trí, ngày phỏng vấn, tùy chọn luyện tập |
+| Tổng quan | `#/dashboard` | Điểm, chuỗi ngày luyện, buổi được gợi ý, biểu đồ, lộ trình |
+| Luyện phỏng vấn | `#/practice` | Ngành → doanh nghiệp → thiết lập → học trước → phỏng vấn → phản hồi |
+| Lịch sử & tiến bộ | `#/history`, `#/history/<id>` | Biểu đồ, so sánh lần đầu / lần gần nhất, xem lại từng buổi, xuất CSV |
+| Thư viện | `#/library` | Bài học, ngân hàng câu hỏi (có câu mẫu nghe được), người phỏng vấn, mẹo |
+| Huy hiệu | `#/achievements` | Cấp độ và 13 huy hiệu |
+| Hồ sơ & cài đặt | `#/profile` | Sửa hồ sơ, tùy chọn mặc định, giao diện, chế độ trình bày, tải / xóa dữ liệu |
+| Nhà trường | `#/school` (+ `/students`, `/classes`, `/pilot`) | Bảng điều khiển theo lớp (dữ liệu mẫu), mã mời lớp, chỉ số thử nghiệm H1–H3 (dữ liệu thật) |
+
+Sau mỗi buổi phỏng vấn có khảo sát nhanh 2 câu; kết quả được dùng cho trang **Chỉ số thử nghiệm** của nhà trường.
 
 ### Trình tự câu hỏi (giống một buổi phỏng vấn thật)
 
@@ -86,38 +102,57 @@ Chọn ngành → Chọn doanh nghiệp mô phỏng → Thiết lập (vị trí
 
 - PixelStart mở sẵn; NovaTech cần 60 điểm rèn luyện; GlobalCore cần 150 điểm.
 - Chủ đề 2 mở khi xong chủ đề 1, chủ đề 3 mở khi xong chủ đề 2.
-- Khi thuyết trình: vào **Tiến độ** → bật **Chế độ trình bày** để mở khóa toàn bộ.
+- Khi thuyết trình: vào **Hồ sơ & cài đặt** → bật **Chế độ trình bày** để mở khóa toàn bộ.
 
-Tiến độ được lưu trong trình duyệt (localStorage). Xóa ở trang **Tiến độ**.
+Tiến độ được lưu trong trình duyệt (localStorage), riêng cho từng tài khoản. Xóa ở **Hồ sơ & cài đặt**.
 
 ## 5. Cấu trúc thư mục
 
 ```
 code/
 ├── index.html
-├── vite.config.js          # Cấu hình Vite + proxy gọi AI (giấu API key)
-├── .env.example            # Mẫu cấu hình AI
+├── vite.config.js             # Cấu hình Vite + proxy gọi AI (giấu API key)
+├── .env.example               # Mẫu cấu hình AI
 └── src/
     ├── main.jsx
-    ├── App.jsx             # Điều hướng giữa các màn hình, lưu tiến độ
-    ├── styles.css
-    ├── data/content.js     # Ngành, doanh nghiệp, vai phỏng vấn, bài học, ngân hàng câu hỏi
+    ├── App.jsx                # Định tuyến các trang, chặn trang cần đăng nhập
+    ├── router.jsx             # Điều hướng bằng dấu # (không cần thư viện)
+    ├── styles.css             # Toàn bộ giao diện, biến màu ở đầu file
+    ├── context/AppContext.jsx # Tài khoản, tiến độ, giao diện sáng/tối, thông báo
+    ├── services/              # TẦNG GIẢ LẬP MÁY CHỦ – sau này thay bằng gọi API
+    │   ├── auth.js            # Đăng ký, đăng nhập, tài khoản demo
+    │   ├── demoSeed.js        # Dữ liệu mẫu cho tài khoản sinh viên demo
+    │   ├── schoolData.js      # Dữ liệu mẫu nhà trường + chỉ số thử nghiệm
+    │   └── storage.js         # Đọc/ghi localStorage
+    ├── data/content.js        # Ngành, doanh nghiệp, vai phỏng vấn, bài học, ngân hàng câu hỏi
     ├── lib/
-    │   ├── aiEngine.js     # Người phỏng vấn AI + chấm điểm bằng AI
-    │   ├── mockEngine.js   # Chế độ demo + chấm điểm theo quy tắc + bắt lỗi từng câu
-    │   ├── speech.js       # Nói thành chữ và đọc thành tiếng (Web Speech API)
-    │   └── progress.js     # Điểm rèn luyện, mở khóa, lịch sử
-    ├── components/         # Header, Stepper, ScoreBar, Icons
-    └── screens/            # Từng màn hình của luồng sử dụng
+    │   ├── aiEngine.js        # Người phỏng vấn AI + chấm điểm bằng AI
+    │   ├── mockEngine.js      # Chế độ demo + chấm điểm theo quy tắc + bắt lỗi từng câu
+    │   ├── speech.js          # Nói thành chữ và đọc thành tiếng (Web Speech API)
+    │   ├── progress.js        # Điểm rèn luyện, mở khóa, lịch sử, cấp độ, thống kê
+    │   ├── achievements.js    # Huy hiệu
+    │   └── format.js          # Định dạng ngày, số, xuất CSV
+    ├── components/            # Khung trang, biểu đồ SVG, biểu tượng, hộp thoại, thông báo
+    ├── pages/                 # Từng trang (trang chủ, tổng quan, lịch sử, nhà trường...)
+    └── screens/               # Các bước của luồng luyện phỏng vấn
 ```
 
 Muốn thêm câu hỏi, câu trả lời mẫu, doanh nghiệp hay bài học: chỉ cần sửa `src/data/content.js`.
+
+### Khi làm bản hoàn chỉnh
+
+- **Máy chủ:** thay các hàm trong `src/services/` (đang đọc/ghi localStorage) bằng lời gọi API. Các hàm đã trả về Promise nên giao diện không phải sửa.
+  `loadProgress` / `saveProgress` trong `src/lib/progress.js` cũng chuyển sang API.
+- **Mật khẩu:** `services/auth.js` chỉ băm đơn giản để mô phỏng; bản thật phải xác thực và băm mật khẩu ở máy chủ.
+- **Nhà trường:** `services/schoolData.js` đang sinh dữ liệu mẫu; bản thật lấy sinh viên theo mã lớp từ máy chủ.
+- **Màu sắc:** đổi các biến `--brand` (tím) và `--accent` (cam) ở đầu `src/styles.css`.
 
 ## 6. Phạm vi MVP
 
 Có: ngành IT · Intern, Fresher · 3 doanh nghiệp mô phỏng · 3 chủ đề · 3 vai nhà tuyển dụng ·
 phỏng vấn bằng văn bản hoặc giọng nói (Speech-to-Text, Text-to-Speech) · câu hỏi đào sâu, giới hạn thời gian, tình huống thay đổi ·
-phản hồi 3 tiêu chí, chỉ rõ lỗi từng câu, câu trả lời mẫu tối ưu · điểm rèn luyện và mở khóa.
+phản hồi 3 tiêu chí, chỉ rõ lỗi từng câu, câu trả lời mẫu tối ưu · điểm rèn luyện, cấp độ, huy hiệu và mở khóa ·
+lịch sử và biểu đồ tiến bộ · tài khoản mô phỏng · bảng điều khiển nhà trường bản xem trước (dữ liệu mẫu) · khảo sát sau buổi.
 
-Để sau MVP: đánh giá phát âm và ngữ điệu, ngành khác, cấp Junior/Senior, tài khoản đăng nhập,
-dashboard cho nhà trường.
+Để sau MVP: đánh giá phát âm và ngữ điệu, ngành khác, cấp Junior/Senior, máy chủ và đăng nhập thật,
+dữ liệu nhà trường thật, bảng xếp hạng.
