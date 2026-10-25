@@ -1,6 +1,6 @@
 // Dữ liệu mẫu cho tài khoản sinh viên demo: vài buổi phỏng vấn đã làm trong tuần qua,
 // được chấm thật bằng bộ chấm của chế độ demo, để trang tổng quan có số liệu khi trình bày.
-import { TOPICS, COMPANIES, MODEL_ANSWERS } from '../data/content.js'
+import { TOPICS, COMPANIES, defaultPersonaOf, modelAnswerFor } from '../data/content.js'
 import { createMockSession, mockEvaluate, splitSentences } from '../lib/mockEngine.js'
 import { resetProgress, completeLesson, recordSession, pointsFor } from '../lib/progress.js'
 import { awardBadges } from '../lib/achievements.js'
@@ -16,7 +16,7 @@ const SAMPLE = [
 
 // keep: số câu giữ lại từ câu trả lời mẫu (ít câu → câu trả lời sơ sài → điểm thấp).
 function answerFor(q, keep, companyName) {
-  const model = (MODEL_ANSWERS[q.id]?.en || '').replaceAll('{company}', companyName)
+  const model = modelAnswerFor(q.id, 'it', 'en', companyName)
   return splitSentences(model).slice(0, keep).join(' ')
 }
 
@@ -26,7 +26,7 @@ export function seedDemoProgress() {
     const topic = TOPICS.find((t) => t.id === s.topicId)
     const company = COMPANIES.find((c) => c.id === s.companyId)
     const position = company.positions.includes('Fresher') ? 'Fresher' : company.positions[0]
-    const ctx = { companyId: s.companyId, topicId: s.topicId, personaId: topic.defaultPersona, language: 'en', position }
+    const ctx = { companyId: s.companyId, careerId: company.career, topicId: s.topicId, personaId: defaultPersonaOf(topic, company.career), language: 'en', position }
     const session = createMockSession(ctx)
     session.plan.forEach((q, i) => session.answers[i].push({ text: answerFor(q, s.keep, company.name), timedOut: false, spoken: false }))
     session.reverse = { text: 'What does a typical day look like for a new member of your team?', timedOut: false, spoken: false }

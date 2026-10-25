@@ -186,7 +186,7 @@ export function PublicFooter() {
       <div className="public-inner footer-grid">
         <div>
           <Brand light />
-          <p>Nền tảng luyện phỏng vấn xin việc cùng AI cho sinh viên IT Việt Nam ở cấp độ Intern và Fresher.</p>
+          <p>Nền tảng luyện phỏng vấn xin việc cùng AI cho sinh viên Việt Nam nhiều ngành nghề, cấp độ Intern và Fresher.</p>
         </div>
         <div>
           <h4>Sản phẩm</h4>

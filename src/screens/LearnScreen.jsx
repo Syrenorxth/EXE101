@@ -1,4 +1,4 @@
-import { LESSONS } from '../data/content.js'
+import { lessonFor } from '../data/content.js'
 import Icon from '../components/Icons.jsx'
 
 export function LessonBody({ lesson }) {
@@ -17,8 +17,8 @@ export function LessonBody({ lesson }) {
   ))
 }
 
-export default function LearnScreen({ topicId, alreadyDone, onDone, onBack }) {
-  const lesson = LESSONS[topicId]
+export default function LearnScreen({ topicId, careerId, alreadyDone, onDone, onBack }) {
+  const lesson = lessonFor(topicId, careerId)
   return (
     <section className="screen narrow">
       <div className="screen-intro">

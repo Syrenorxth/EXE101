@@ -4,7 +4,8 @@ import { LessonBody } from '../screens/LearnScreen.jsx'
 import { Avatar } from '../components/Brand.jsx'
 import Icon, { SpeakerIcon } from '../components/Icons.jsx'
 import { navigate } from '../router.jsx'
-import { LESSONS, QUESTIONS, SITUATION_CHANGES, MODEL_ANSWERS, PERSONAS, TOPICS, REVERSE_QUESTION, REVERSE_TIP } from '../data/content.js'
+import { CAREERS, QUESTIONS, SITUATION_CHANGES, TOPICS, REVERSE_QUESTION, REVERSE_TIP, DEFAULT_CAREER, companiesOf, personasOf, lessonFor, modelAnswerFor, topicsOfQuestion } from '../data/content.js'
+import { useApp } from '../context/AppContext.jsx'
 import { speak, stopSpeaking, TTS_SUPPORTED } from '../lib/speech.js'
 
 const TABS = [
@@ -17,7 +18,7 @@ const TABS = [
 const KINDS = {
   behavior: ['Hành vi', 'Khung STAR'],
   tech: ['Kiến thức', 'Định nghĩa → ví dụ → so sánh'],
-  incident: ['Xử lý sự cố', 'Khoanh vùng → nguyên nhân → khắc phục → báo cáo'],
+  incident: ['Xử lý tình huống khó', 'Xác nhận, khoanh vùng → nguyên nhân → giải pháp → báo cáo'],
   situation: ['Tình huống thay đổi', 'Xác nhận → ưu tiên → trao đổi rủi ro']
 }
 
@@ -26,10 +27,8 @@ const ALL = [
   ...SITUATION_CHANGES.map((q) => ({ ...q, kind: 'situation' }))
 ]
 
-// Câu hỏi xuất hiện ở chủ đề nào.
-const topicsOf = (id) => TOPICS.filter((t) => t.stages.some((s) => s.ids.includes(id)) || (id.startsWith('sc') && t.situationChange)).map((t) => t.id)
 
-function QuestionBank() {
+function QuestionBank({ career }) {
   const [kind, setKind] = useState('all')
   const [lang, setLang] = useState('en')
   const [q, setQ] = useState('')
@@ -39,9 +38,10 @@ function QuestionBank() {
   useEffect(() => () => stopSpeaking(), [])
 
   const list = useMemo(() => ALL.filter((x) =>
+    (!x.career || x.career === career) &&
     (kind === 'all' || x.kind === kind) &&
     (!q.trim() || `${x.vi} ${x.en}`.toLowerCase().includes(q.trim().toLowerCase()))
-  ), [kind, q])
+  ), [kind, q, career])
 
   const play = (key, text) => {
     if (playing === key) {
@@ -61,7 +61,7 @@ function QuestionBank() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm câu hỏi…" aria-label="Tìm câu hỏi" />
         </label>
         <div className="chips">
-          <button className={`chip ${kind === 'all' ? 'on' : ''}`} onClick={() => setKind('all')}>Tất cả ({ALL.length})</button>
+          <button className={`chip ${kind === 'all' ? 'on' : ''}`} onClick={() => setKind('all')}>Tất cả ({ALL.filter((x) => !x.career || x.career === career).length})</button>
           {Object.entries(KINDS).map(([k, [label]]) => (
             <button key={k} className={`chip ${kind === k ? 'on' : ''}`} onClick={() => setKind(k)}>{label}</button>
           ))}
@@ -74,14 +74,14 @@ function QuestionBank() {
 
       <div className="stack">
         {list.map((x) => {
-          const model = (MODEL_ANSWERS[x.id]?.[lang] || '').replaceAll('{company}', 'PixelStart')
+          const model = modelAnswerFor(x.id, career, lang, companiesOf(career)[0].name)
           const isOpen = openId === x.id
           return (
             <article key={x.id} className={`card qa ${isOpen ? 'expanded' : ''}`}>
               <button className="qa-head" onClick={() => setOpenId(isOpen ? null : x.id)} aria-expanded={isOpen}>
                 <span className={`kind-tag kind-${x.kind}`}>{KINDS[x.kind][0]}</span>
                 <span className="qa-q">{x[lang]}</span>
-                <span className="qa-topics">{topicsOf(x.id).map((t) => `CĐ ${t}`).join(' · ')}</span>
+                <span className="qa-topics">{topicsOfQuestion(x.id, career).map((t) => `CĐ ${t}`).join(' · ')}</span>
                 <Icon name="chevronDown" className="chev" />
               </button>
               {isOpen && (
@@ -113,7 +113,9 @@ function QuestionBank() {
 
 export default function LibraryPage({ tab = 'lessons' }) {
   const current = TABS.some((t) => t[0] === tab) ? tab : 'lessons'
+  const { user } = useApp()
   const [lesson, setLesson] = useState(1)
+  const [career, setCareer] = useState(user.career || DEFAULT_CAREER)
 
   return (
     <AppShell title="Thư viện" subtitle="Bài học, câu hỏi mẫu và mẹo phỏng vấn">
@@ -125,28 +127,36 @@ export default function LibraryPage({ tab = 'lessons' }) {
         ))}
       </div>
 
+      {current !== 'tips' && (
+        <div className="chips career-chips" role="radiogroup" aria-label="Chọn ngành">
+          {CAREERS.map((c) => (
+            <button key={c.id} role="radio" aria-checked={career === c.id} className={`chip ${career === c.id ? 'on' : ''}`} onClick={() => setCareer(c.id)}>{c.name}</button>
+          ))}
+        </div>
+      )}
+
       {current === 'lessons' && (
         <div className="lesson-layout">
           <div className="lesson-nav">
             {TOPICS.map((t) => (
               <button key={t.id} className={`option ${lesson === t.id ? 'on' : ''}`} onClick={() => setLesson(t.id)}>
                 <span className="option-num">Chủ đề {t.id}</span>
-                <span className="option-title">{LESSONS[t.id].title}</span>
+                <span className="option-title">{lessonFor(t.id, career).title}</span>
               </button>
             ))}
           </div>
           <div className="lesson-content">
-            <h2 className="section-title">{LESSONS[lesson].title}</h2>
-            <LessonBody lesson={LESSONS[lesson]} />
+            <h2 className="section-title">{lessonFor(lesson, career).title}</h2>
+            <LessonBody lesson={lessonFor(lesson, career)} />
           </div>
         </div>
       )}
 
-      {current === 'questions' && <QuestionBank />}
+      {current === 'questions' && <QuestionBank career={career} />}
 
       {current === 'personas' && (
         <div className="grid grid-3">
-          {Object.values(PERSONAS).map((p) => (
+          {personasOf(career).map((p) => (
             <article key={p.id} className="card persona-card">
               <Avatar name={p.name} size={64} />
               <h3>{p.name}</h3>
@@ -170,7 +180,7 @@ export default function LibraryPage({ tab = 'lessons' }) {
           <ul>
             <li>What does a typical day look like for a new member of your team?</li>
             <li>How do you evaluate interns and freshers here?</li>
-            <li>What technologies will I work with in the first three months?</li>
+            <li>What will I be working on in my first three months?</li>
             <li>Một ngày làm việc của thực tập sinh trong nhóm diễn ra thế nào?</li>
           </ul>
           <h4>Nên tránh</h4>

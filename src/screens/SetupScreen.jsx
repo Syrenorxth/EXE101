@@ -1,4 +1,4 @@
-import { COMPANIES, TOPICS, PERSONAS, POSITIONS } from '../data/content.js'
+import { COMPANIES, TOPICS, PERSONAS, POSITIONS, personasOf, resolvePersona, defaultPersonaOf, careerById, stageName } from '../data/content.js'
 import { isTopicUnlocked, doneKey } from '../lib/progress.js'
 import { AI_ENABLED } from '../lib/aiEngine.js'
 import { STT_SUPPORTED, TTS_SUPPORTED } from '../lib/speech.js'
@@ -9,7 +9,8 @@ export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip
   const company = COMPANIES.find((c) => c.id === setup.companyId)
   const persona = PERSONAS[setup.personaId]
   const topic = TOPICS.find((t) => t.id === setup.topicId)
-  const locked = topic?.lockedPersona
+  const career = careerById(company.career)
+  const locked = topic?.lockedPersona && resolvePersona(topic.lockedPersona, career.id)
   const questions = topic.stages.length + (topic.situationChange ? 1 : 0)
 
   return (
@@ -38,12 +39,12 @@ export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip
                   key={t.id}
                   disabled={!open}
                   className={`option ${setup.topicId === t.id ? 'on' : ''} ${open ? '' : 'disabled'}`}
-                  onClick={() => onChange({ topicId: t.id, personaId: t.defaultPersona })}
+                  onClick={() => onChange({ topicId: t.id, personaId: defaultPersonaOf(t, career.id) })}
                 >
                   <span className="option-num">{open ? `Chủ đề ${t.id}` : <><Icon name="lock" size={12} /> Chủ đề {t.id}</>}</span>
                   <span className="option-title">{t.name}</span>
                   <span className="option-desc">{open ? t.goal : `Hoàn thành chủ đề ${t.id - 1} để mở`}</span>
-                  <span className="option-stages">{t.stages.map((s) => s.name).join(' → ')}{t.situationChange ? ' → Tình huống thay đổi' : ''}</span>
+                  <span className="option-stages">{t.stages.map((s) => stageName(s, career.id)).join(' → ')}{t.situationChange ? ' → Tình huống thay đổi' : ''}</span>
                   {best !== undefined && <span className="tag tag-ok">Tốt nhất {best.toFixed(1)}/10</span>}
                 </button>
               )
@@ -54,7 +55,7 @@ export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip
         <div className="card setup-block">
           <h3 className="block-title"><span className="block-num">3</span> Người phỏng vấn</h3>
           <div className="grid grid-3 tight">
-            {Object.values(PERSONAS).map((p) => {
+            {personasOf(career.id).map((p) => {
               const off = Boolean(locked) && locked !== p.id
               return (
                 <button
@@ -73,7 +74,7 @@ export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip
             })}
           </div>
           {locked && (
-            <p className="muted small">Phỏng vấn chuyên môn luôn do {PERSONAS[locked].name} ({PERSONAS[locked].role.toLowerCase()}) đảm nhận, giống vòng phỏng vấn kỹ thuật thật.</p>
+            <p className="muted small">Phỏng vấn chuyên môn luôn do {PERSONAS[locked].name} ({PERSONAS[locked].role.toLowerCase()}) đảm nhận, giống vòng phỏng vấn chuyên môn thật.</p>
           )}
         </div>
 
@@ -125,7 +126,7 @@ export default function SetupScreen({ setup, progress, onChange, onLearn, onSkip
           <span className={`co-logo co-${company.id}`}>{company.name[0]}</span>
           <div>
             <strong>{company.name}</strong>
-            <small>{company.kind} · {setup.position}</small>
+            <small>{career.short} · {company.kind} · {setup.position}</small>
           </div>
         </div>
         <div className="summary-persona">

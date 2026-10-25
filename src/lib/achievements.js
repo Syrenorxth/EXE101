@@ -23,8 +23,8 @@ export const BADGES = [
   { id: 'improve', icon: 'chart', name: 'Tiến bộ rõ rệt', desc: 'Tăng ít nhất 1 điểm so với lần đầu ở cùng một chủ đề.', test: improved },
   { id: 'five', icon: 'target', name: 'Luyện đều tay', desc: 'Hoàn thành 5 buổi phỏng vấn.', test: (p) => p.history.length >= 5 },
   { id: 'streak3', icon: 'flame', name: 'Chuỗi 3 ngày', desc: 'Luyện tập 3 ngày liên tiếp.', test: (p) => streakOf(p.history) >= 3 },
-  { id: 'novatech', icon: 'building', name: 'Mở cửa NovaTech', desc: 'Đạt 60 điểm rèn luyện để mở khóa NovaTech.', test: (p) => p.points >= 60 },
-  { id: 'globalcore', icon: 'building', name: 'Mở cửa GlobalCore', desc: 'Đạt 150 điểm rèn luyện để mở khóa GlobalCore.', test: (p) => p.points >= 150 },
+  { id: 'novatech', icon: 'building', name: 'Mở cửa cấp Trung bình', desc: 'Đạt 60 điểm rèn luyện để mở khóa doanh nghiệp cấp Trung bình.', test: (p) => p.points >= 60 },
+  { id: 'globalcore', icon: 'building', name: 'Mở cửa cấp Nâng cao', desc: 'Đạt 150 điểm rèn luyện để mở khóa doanh nghiệp cấp Nâng cao.', test: (p) => p.points >= 150 },
   {
     id: 'company',
     icon: 'award',

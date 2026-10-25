@@ -16,7 +16,7 @@ const CRIT = { relevance: 'Relevance', clarity: 'Clarity', structure: 'Structure
 const ADVICE = {
   relevance: 'nên tổ chức buổi chia sẻ về cách đọc mô tả công việc và trả lời đúng trọng tâm.',
   clarity: 'nên cho sinh viên luyện trả lời bằng giọng nói với giới hạn thời gian.',
-  structure: 'nên tổ chức workshop về phương pháp STAR và khung trả lời câu hỏi kỹ thuật.'
+  structure: 'nên tổ chức workshop về phương pháp STAR và khung trả lời câu hỏi chuyên môn.'
 }
 const TITLES = {
   overview: ['Tổng quan nhà trường', 'Tình hình luyện phỏng vấn của sinh viên'],

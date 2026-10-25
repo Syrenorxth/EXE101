@@ -54,7 +54,7 @@ export default function AuthPage({ mode }) {
         <div className="auth-side-copy">
           <h2>Mỗi buổi luyện là một lần bớt run khi gặp nhà tuyển dụng thật.</h2>
           <ul className="ticks on-dark">
-            <li><Icon name="check" size={16} /> 3 doanh nghiệp mô phỏng, 3 vai người phỏng vấn</li>
+            <li><Icon name="check" size={16} /> 4 ngành, 12 doanh nghiệp mô phỏng, 3 vai người phỏng vấn</li>
             <li><Icon name="check" size={16} /> Trả lời bằng giọng nói, nhận xét từng câu</li>
             <li><Icon name="check" size={16} /> Theo dõi tiến bộ qua từng buổi</li>
           </ul>

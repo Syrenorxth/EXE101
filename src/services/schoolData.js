@@ -24,9 +24,9 @@ const FIRST = ['Khoa', 'Hà', 'An', 'Linh', 'Nam', 'Trang', 'Huy', 'Mai', 'Long'
 const CLASS_KEY = 'palspeak:school-classes'
 const DEFAULT_CLASSES = [
   { id: 'c1', code: 'KTPM-K18', name: 'Kỹ thuật phần mềm K18', size: 48 },
-  { id: 'c2', code: 'KTPM-K19', name: 'Kỹ thuật phần mềm K19', size: 52 },
-  { id: 'c3', code: 'HTTT-K18', name: 'Hệ thống thông tin K18', size: 40 },
-  { id: 'c4', code: 'KHMT-K18', name: 'Khoa học máy tính K18', size: 44 }
+  { id: 'c2', code: 'MKT-K18', name: 'Digital Marketing K18', size: 52 },
+  { id: 'c3', code: 'TCNH-K18', name: 'Tài chính – Ngân hàng K18', size: 40 },
+  { id: 'c4', code: 'QTKD-K18', name: 'Quản trị kinh doanh K18', size: 44 }
 ]
 
 export function loadClasses() {

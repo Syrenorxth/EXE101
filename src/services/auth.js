@@ -13,7 +13,7 @@ export const DEFAULT_PREFS = { language: 'en', voice: true, timeChallenge: true 
 
 // Tăng số này mỗi khi sửa thông tin hoặc dữ liệu mẫu của tài khoản demo:
 // trình duyệt đã có tài khoản demo cũ sẽ được cập nhật ở lần vào demo tiếp theo.
-const DEMO_VERSION = 2
+const DEMO_VERSION = 3
 
 export const DEMO_ACCOUNTS = {
   student: {
@@ -25,7 +25,8 @@ export const DEMO_ACCOUNTS = {
     year: 'Năm 4',
     position: 'Fresher',
     target: 'Thực tập fullstack',
-    classCode: 'KTPM-K18'
+    classCode: 'KTPM-K18',
+    career: 'it'
   },
   school: {
     email: 'demo.nhatruong@palspeak.vn',

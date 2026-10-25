@@ -1,6 +1,6 @@
 // "Chế độ demo": người phỏng vấn theo kịch bản + chấm điểm theo quy tắc.
 // Dùng khi chưa cấu hình API key, hoặc khi cần trình chiếu không có mạng.
-import { QUESTIONS, SITUATION_CHANGES, PERSONAS, TOPICS, COMPANIES, MODEL_ANSWERS, REVERSE_QUESTION } from '../data/content.js'
+import { QUESTIONS, SITUATION_CHANGES, PERSONAS, TOPICS, COMPANIES, REVERSE_QUESTION, careerOf, stageIds, stageName, modelAnswerFor } from '../data/content.js'
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)]
 const words = (t) => (t.trim() ? t.trim().split(/\s+/).length : 0)
@@ -36,15 +36,15 @@ const CLOSING = {
 
 const RESULT_WORDS = ['kết quả', 'cuối cùng', 'hoàn thành', 'tăng', 'giảm', 'nhờ đó', 'bài học', '%', 'result', 'finally', 'increased', 'reduced', 'improved', 'saved', 'achieved', 'completed', 'learned', 'outcome']
 const EXAMPLE_WORDS = ['ví dụ', 'chẳng hạn', 'như là', 'example', 'for instance', 'such as']
-const PREVENT_WORDS = ['báo', 'ghi lại', 'test', 'kiểm thử', 'lặp lại', 'rút kinh nghiệm', 'report', 'document', 'prevent', 'again', 'post-mortem', 'monitor']
+const PREVENT_WORDS = ['báo', 'ghi lại', 'test', 'kiểm thử', 'lặp lại', 'rút kinh nghiệm', 'quy trình', 'theo dõi', 'kiểm tra chéo', 'report', 'document', 'prevent', 'again', 'post-mortem', 'monitor', 'process', 'follow up', 'cross-check']
 
-// Lập danh sách câu hỏi chính theo trình tự của chủ đề: mỗi bước chọn một câu,
+// Lập danh sách câu hỏi chính theo trình tự của chủ đề và ngành: mỗi bước chọn một câu,
 // tình huống thay đổi (nếu có) luôn ở cuối. Dùng chung cho chế độ demo và AI thật.
-export function buildPlan(topicId) {
+export function buildPlan(topicId, careerId) {
   const topic = TOPICS.find((t) => t.id === topicId)
   const plan = topic.stages.map((stage) => {
-    const id = pick(stage.ids)
-    return { ...QUESTIONS[id], id, stage: stage.name, bridge: stage.bridge }
+    const id = pick(stageIds(stage, careerId))
+    return { ...QUESTIONS[id], id, stage: stageName(stage, careerId), bridge: stage.bridge }
   })
   if (topic.situationChange) {
     plan.push({
@@ -58,7 +58,7 @@ export function buildPlan(topicId) {
 }
 
 export function createMockSession(ctx) {
-  const plan = buildPlan(ctx.topicId)
+  const plan = buildPlan(ctx.topicId, ctx.careerId || careerOf(ctx.companyId))
   return { ctx, plan, index: 0, followUpAsked: false, reverseAsked: false, reverse: null, answers: plan.map(() => []) }
 }
 
@@ -69,7 +69,7 @@ function needsFollowUp(session, answer) {
   const persona = session.ctx.personaId
   if (n < 25) return 'specific'
   if (persona === 'manager' && n > 150) return 'shorten'
-  if (q.kind === 'tech' && persona === 'techlead' && !EXAMPLE_WORDS.some((w) => lower.includes(w))) return 'example'
+  if (q.kind === 'tech' && PERSONAS[persona]?.specialist && !EXAMPLE_WORDS.some((w) => lower.includes(w))) return 'example'
   if (q.kind === 'incident') return PREVENT_WORDS.some((w) => lower.includes(w)) ? null : 'prevent'
   if (q.kind !== 'tech' && !RESULT_WORDS.some((w) => lower.includes(w))) return 'result'
   return null
@@ -152,12 +152,13 @@ const TECH = [
   EXAMPLE_WORDS,
   ['so với', 'khác', 'ưu điểm', 'nhược điểm', 'đánh đổi', 'trade-off', 'compared', 'whereas', 'however', 'nhưng']
 ]
-// Khung xử lý sự cố (bài học chủ đề 2): khoanh vùng → tìm nguyên nhân → khắc phục → báo cáo.
+// Khung xử lý sự cố / tình huống khó (bài học chủ đề 2, dùng chung cho mọi ngành):
+// xác nhận, khoanh vùng → tìm nguyên nhân → khắc phục, đề xuất giải pháp → báo cáo, phòng tránh.
 const INCIDENT = [
-  ['bình tĩnh', 'khoanh vùng', 'xác định', 'kiểm tra', 'tái hiện', 'stay calm', 'narrow', 'identify', 'check', 'reproduce'],
-  ['log', 'nguyên nhân', 'thay đổi gần nhất', 'deploy', 'cause', 'recent', 'latest change', 'root'],
-  ['sửa', 'rollback', 'khắc phục', 'hotfix', 'phiên bản ổn định', 'fix', 'roll back', 'restore', 'stable version'],
-  ['báo', 'trưởng nhóm', 'ghi lại', 'test', 'report', 'team lead', 'document', 'inform', 'prevent']
+  ['bình tĩnh', 'khoanh vùng', 'xác định', 'xác nhận', 'kiểm tra', 'tái hiện', 'lắng nghe', 'stay calm', 'narrow', 'identify', 'confirm', 'check', 'reproduce', 'listen', 'assess'],
+  ['log', 'nguyên nhân', 'thay đổi gần nhất', 'deploy', 'đối chiếu', 'tìm hiểu', 'cause', 'recent', 'latest change', 'root', 'reconcile', 'investigate'],
+  ['sửa', 'rollback', 'khắc phục', 'hotfix', 'phiên bản ổn định', 'giải pháp', 'điều chỉnh', 'xin lỗi', 'bù đắp', 'fix', 'roll back', 'restore', 'stable version', 'solution', 'adjust', 'apologi', 'compensate'],
+  ['báo', 'trưởng nhóm', 'cấp trên', 'ghi lại', 'test', 'quy trình', 'theo dõi', 'report', 'team lead', 'manager', 'document', 'inform', 'prevent', 'process', 'follow up']
 ]
 const CONNECTORS = ['đầu tiên', 'thứ nhất', 'thứ hai', 'sau đó', 'tiếp theo', 'cuối cùng', 'first', 'second', 'then', 'next', 'finally']
 
@@ -249,7 +250,7 @@ export function analyzeSentences(q, text, lang = 'vi') {
 
 const STRUCTURE_TIP = {
   tech: 'Nên trả lời theo khung: định nghĩa → ví dụ → so sánh, đánh đổi.',
-  incident: 'Nên trả lời theo khung xử lý sự cố: khoanh vùng → tìm nguyên nhân (log, thay đổi gần nhất) → khắc phục hoặc rollback → báo cáo và phòng tránh.',
+  incident: 'Nên trả lời theo khung xử lý tình huống: xác nhận và khoanh vùng vấn đề → tìm nguyên nhân → khắc phục hoặc đề xuất giải pháp → báo cáo và phòng tránh lặp lại.',
   behavior: 'Nên sắp xếp theo STAR: bối cảnh → nhiệm vụ → hành động → kết quả.'
 }
 
@@ -309,7 +310,7 @@ export function mockEvaluate(session) {
     const timedOut = parts.some((p) => p.timedOut)
     const spoken = parts.some((p) => p.spoken)
     const companyName = COMPANIES.find((c) => c.id === session.ctx.companyId)?.name || ''
-    const model = (MODEL_ANSWERS[q.id]?.[lang] || '').replaceAll('{company}', companyName)
+    const model = modelAnswerFor(q.id, session.ctx.careerId || careerOf(session.ctx.companyId), lang, companyName)
     return {
       question: q[lang],
       answer: text,

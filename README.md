@@ -1,9 +1,9 @@
 # PalSpeak – Bản demo MVP
 
-**PalSpeak** là web luyện phỏng vấn xin việc cùng AI cho sinh viên IT Việt Nam ở cấp độ **Intern** và **Fresher**
+**PalSpeak** là web luyện phỏng vấn xin việc cùng AI cho sinh viên Việt Nam ở nhiều ngành nghề, cấp độ **Intern** và **Fresher**
 (dự án môn EXE101, mô hình B2B2C: sinh viên dùng, nhà trường chi trả).
 
-Sinh viên chọn một doanh nghiệp mô phỏng, học nhanh cách trả lời, rồi vào phỏng vấn với "người phỏng vấn ảo"
+Sinh viên chọn ngành (**IT, Marketing, Tài chính – Kế toán, Kinh doanh**) và một doanh nghiệp mô phỏng, học nhanh cách trả lời, rồi vào phỏng vấn với "người phỏng vấn ảo"
 (gõ phím hoặc nói qua micro). Cuối buổi, PalSpeak chấm theo 3 tiêu chí, chỉ rõ câu nào nói chưa tốt và đưa câu trả lời mẫu.
 
 > Đây là bản **"giống hoàn chỉnh"**: có đủ các trang của một sản phẩm thật (trang chủ, đăng nhập, tổng quan, lịch sử,
@@ -150,7 +150,7 @@ Giọng nói dùng **Web Speech API** có sẵn trong trình duyệt: miễn ph�
   Có nút **Nghe lại** để nghe câu hỏi lần nữa, và nút **Nghe mẫu** ở câu trả lời mẫu. Đồng hồ tạm dừng trong lúc đang đọc.
 - **Trả lời bằng micro (Speech-to-Text):** bấm **Nói câu trả lời**, chữ hiện dần vào ô nhập; có thể sửa trước khi gửi.
   Cần Chrome hoặc Edge, cần mạng Internet, và cho phép trình duyệt dùng micro ở lần đầu.
-- **Ngôn ngữ:** mặc định phỏng vấn bằng **tiếng Anh** (câu hỏi, câu đào sâu, câu mẫu, giọng đọc en-US) vì nhiều công ty IT
+- **Ngôn ngữ:** mặc định phỏng vấn bằng **tiếng Anh** (câu hỏi, câu đào sâu, câu mẫu, giọng đọc en-US) vì nhiều doanh nghiệp, nhất là công ty nước ngoài,
   phỏng vấn một phần bằng tiếng Anh. Phần **nhận xét luôn bằng tiếng Việt**. Có thể đổi sang tiếng Việt ở bước Thiết lập
   hoặc đặt mặc định trong **Hồ sơ & cài đặt**.
 
@@ -179,19 +179,27 @@ Riêng tab **Chỉ số thử nghiệm** tính từ **dữ liệu thật** của
 
 ## 8. Một buổi luyện diễn ra thế nào
 
-1. **Chọn doanh nghiệp:** PixelStart (startup, dễ), NovaTech (gia công phần mềm, trung bình), GlobalCore (công ty sản phẩm, khó).
+1. **Chọn ngành và doanh nghiệp:** mỗi ngành có 3 doanh nghiệp mô phỏng, từ dễ đến khó:
+
+   | Ngành | Cơ bản (mở sẵn) | Trung bình (60 điểm) | Nâng cao (150 điểm) |
+   |---|---|---|---|
+   | Công nghệ thông tin | PixelStart – startup | NovaTech – gia công phần mềm | GlobalCore – công ty sản phẩm |
+   | Marketing | Bloom Agency – agency truyền thông | Lumina Brands – thương hiệu hàng tiêu dùng | Orbit Commerce – sàn thương mại điện tử |
+   | Tài chính – Kế toán | PayNest – startup fintech | Vertex Bank – ngân hàng thương mại | Crest Advisory – kiểm toán, tư vấn |
+   | Kinh doanh | FreshWay Mart – chuỗi bán lẻ | Sunrise Distribution – phân phối hàng tiêu dùng | CloudPeak Software – phần mềm B2B |
+
 2. **Thiết lập:** vị trí (Intern/Fresher), chủ đề, người phỏng vấn, ngôn ngữ, giới hạn thời gian, đọc câu hỏi, chế độ chấm.
-3. **Học trước (khoảng 3 phút, không bắt buộc):** phương pháp STAR, khung trả lời câu hỏi kỹ thuật, khung xử lý sự cố. Lần đầu được +5 điểm.
+3. **Học trước (khoảng 3 phút, không bắt buộc):** phương pháp STAR, khung trả lời câu hỏi chuyên môn và khung xử lý tình huống khó của từng ngành. Lần đầu được +5 điểm.
 4. **Phỏng vấn:** màn hình giống cuộc gọi video. Bên phải có trình tự buổi phỏng vấn, gợi ý khung trả lời và bản ghi hội thoại.
    Gửi câu trả lời bằng nút **Gửi câu trả lời** hoặc `Ctrl + Enter`.
 5. **Kết quả:** điểm trung bình, biểu đồ 3 tiêu chí, so sánh với lần trước, từng câu hỏi được chấm riêng, khảo sát nhanh 2 câu.
 
-### Ba người phỏng vấn
+### Người phỏng vấn
 
 | Người phỏng vấn | Phong cách | Thời gian mỗi câu |
 |---|---|---|
 | Chị Lan – HR thân thiện | Nói chậm, gợi ý, hỗ trợ | 90 giây |
-| Anh Tuấn – Tech Lead yêu cầu cao | Hỏi sâu, đòi ví dụ cụ thể | 75 giây |
+| Chuyên gia của ngành: Anh Tuấn (Tech Lead, IT), Chị Mai (Trưởng phòng Marketing), Anh Quân (Trưởng nhóm phân tích tài chính), Anh Hùng (Giám đốc kinh doanh khu vực) | Hỏi sâu về chuyên môn, đòi ví dụ cụ thể | 75 giây |
 | Chị Hương – Quản lý bận rộn | Muốn trả lời ngắn gọn, đúng trọng tâm | 45 giây |
 
 ### Trình tự câu hỏi (giống một buổi phỏng vấn thật)
@@ -199,8 +207,17 @@ Riêng tab **Chỉ số thử nghiệm** tính từ **dữ liệu thật** của
 | Chủ đề | Thứ tự câu hỏi |
 |---|---|
 | 1. Khởi động & hành vi (HR) | Giới thiệu bản thân → 1 câu kinh nghiệm (dự án / mâu thuẫn nhóm / điểm mạnh-yếu) → Vì sao chọn công ty |
-| 2. Chuyên môn (luôn do Tech Lead) | Công nghệ trong dự án gần nhất → 1 câu kiến thức (REST/GraphQL hoặc OOP) → 1 tình huống (lỗi 500 hoặc bất đồng thiết kế database) |
-| 3. Tổng hợp (Quản lý) | Giới thiệu ngắn → Dự án hoặc công nghệ đã dùng → Tình huống thay đổi đột ngột |
+| 2. Chuyên môn (luôn do chuyên gia của ngành) | Kinh nghiệm gần nhất → 1 câu kiến thức chuyên môn → 1 tình huống thực tế (xem bảng dưới) |
+| 3. Tổng hợp (Quản lý) | Giới thiệu ngắn → Một câu kinh nghiệm thực tế → Tình huống thay đổi đột ngột |
+
+Câu hỏi chủ đề 2 theo từng ngành:
+
+| Ngành | Kinh nghiệm | Kiến thức (chọn 1) | Tình huống (chọn 1) |
+|---|---|---|---|
+| IT | Công nghệ trong dự án gần nhất | REST và GraphQL / OOP | Lỗi 500 trước buổi demo / Bất đồng thiết kế database |
+| Marketing | Chiến dịch đã tham gia | Brand awareness và performance / Chỉ số đo quảng cáo Facebook | Khủng hoảng truyền thông / Ngân sách bị cắt 30% |
+| Tài chính – Kế toán | Bài phân tích đã làm | Lợi nhuận và dòng tiền / Ba báo cáo tài chính | Số liệu lệch 50 triệu / Báo cáo gấp thiếu số liệu |
+| Kinh doanh | Một lần thuyết phục thành công | Quy trình bán hàng / Tỷ lệ chuyển đổi và CLV | Khách lớn dọa hủy hợp đồng / Mới đạt 60% chỉ tiêu |
 
 - Mỗi bước chọn ngẫu nhiên một câu cùng loại, nên luyện lại không bị trùng y hệt nhưng thứ tự luôn hợp lý.
 - Nếu câu trả lời quá ngắn, mơ hồ hoặc thiếu kết quả, người phỏng vấn hỏi thêm **một câu đào sâu**.
@@ -215,7 +232,7 @@ Mỗi câu hỏi được chấm theo thang 10 với 3 tiêu chí:
 |---|---|
 | **Relevance** | Trả lời đúng trọng tâm câu hỏi |
 | **Clarity** | Diễn đạt rõ ràng, độ dài hợp lý, ít từ đệm |
-| **Structure** | Có cấu trúc: STAR với câu hành vi; định nghĩa → ví dụ → so sánh với câu kiến thức; khoanh vùng → nguyên nhân → khắc phục → báo cáo với câu xử lý sự cố |
+| **Structure** | Có cấu trúc: STAR với câu hành vi; định nghĩa → ví dụ → so sánh với câu kiến thức; xác nhận, khoanh vùng → nguyên nhân → giải pháp → báo cáo với câu xử lý sự cố hoặc tình huống khó |
 
 Ngoài điểm, mỗi câu còn có:
 
@@ -236,14 +253,14 @@ Ngoài điểm, mỗi câu còn có:
 
 **Mở khóa:**
 
-- PixelStart mở sẵn · NovaTech cần **60** điểm · GlobalCore cần **150** điểm.
+- Ở mỗi ngành: doanh nghiệp cấp Cơ bản mở sẵn · cấp Trung bình cần **60** điểm · cấp Nâng cao cần **150** điểm (điểm rèn luyện dùng chung cho mọi ngành).
 - Trong mỗi doanh nghiệp: chủ đề 2 mở khi xong chủ đề 1, chủ đề 3 mở khi xong chủ đề 2.
 
 **Cấp độ:** Tân binh (0) → Ứng viên tiềm năng (60) → Ứng viên vững vàng (150) → Sẵn sàng đi làm (300).
 
 **Huy hiệu (13 cái):** buổi đầu tiên, học trước, học đủ 3 bài, phỏng vấn bằng tiếng Anh, trả lời bằng micro,
 bật giới hạn thời gian, đạt 8.0 trở lên, tăng 1 điểm so với lần đầu, 5 buổi, chuỗi 3 ngày liên tiếp,
-mở NovaTech, mở GlobalCore, hoàn thành cả 3 chủ đề ở một doanh nghiệp.
+mở doanh nghiệp cấp Trung bình, mở doanh nghiệp cấp Nâng cao, hoàn thành cả 3 chủ đề ở một doanh nghiệp.
 
 ## 10. Dữ liệu được lưu ở đâu
 
@@ -321,11 +338,12 @@ code/
 
 | Muốn | Sửa ở đâu trong `content.js` |
 |---|---|
-| Thêm / sửa câu hỏi | `QUESTIONS` (mỗi câu có bản `vi`, `en`, từ khóa `kw` để chấm, dàn ý `outline`) |
-| Thêm / sửa câu trả lời mẫu | `MODEL_ANSWERS` (cùng mã với câu hỏi) |
-| Đổi trình tự câu hỏi trong một chủ đề | `stages` trong `TOPICS` |
+| Thêm ngành mới | `CAREERS` (kèm người phỏng vấn chuyên môn `specialist`), thêm 3 doanh nghiệp vào `COMPANIES` với `career`, câu hỏi và bài học chủ đề 2 cho ngành đó |
+| Thêm / sửa câu hỏi | `QUESTIONS` (mỗi câu có bản `vi`, `en`, từ khóa `kw` để chấm, dàn ý `outline`, `career` nếu là câu riêng của một ngành) |
+| Thêm / sửa câu trả lời mẫu | `MODEL_ANSWERS` (cùng mã với câu hỏi); câu hành vi theo từng ngành nằm ở `BEHAVIOR_BY_CAREER` |
+| Đổi trình tự câu hỏi trong một chủ đề | `stages` trong `TOPICS` (`ids` có thể chia theo ngành: `{ it: [...], marketing: [...] }`) |
 | Thêm tình huống thay đổi | `SITUATION_CHANGES` |
-| Sửa bài học | `LESSONS` |
+| Sửa bài học | `LESSONS` (chủ đề 2 có bài riêng cho từng ngành) |
 | Sửa doanh nghiệp, điểm mở khóa | `COMPANIES` |
 | Sửa người phỏng vấn, thời gian mỗi câu | `PERSONAS` |
 
@@ -350,12 +368,12 @@ Thư mục `dist/` là bản web tĩnh. Bản này chỉ chạy **chế độ de
 
 ## 14. Phạm vi MVP
 
-**Có trong bản này:** ngành IT · Intern, Fresher · 3 doanh nghiệp mô phỏng · 3 chủ đề · 3 vai nhà tuyển dụng ·
+**Có trong bản này:** 4 ngành (IT, Marketing, Tài chính – Kế toán, Kinh doanh) · Intern, Fresher · 12 doanh nghiệp mô phỏng · 3 chủ đề · 3 vai nhà tuyển dụng mỗi ngành ·
 phỏng vấn bằng văn bản hoặc giọng nói · câu hỏi đào sâu, giới hạn thời gian, tình huống thay đổi ·
 phản hồi 3 tiêu chí, chỉ rõ lỗi từng câu, câu trả lời mẫu tối ưu · điểm rèn luyện, cấp độ, huy hiệu, mở khóa ·
 lịch sử và biểu đồ tiến bộ · tài khoản mô phỏng · bảng điều khiển nhà trường bản xem trước · khảo sát sau buổi.
 
-**Để sau MVP:** đánh giá phát âm và ngữ điệu · ngành Marketing, Tài chính, Kinh doanh · cấp Junior/Senior ·
+**Để sau MVP:** đánh giá phát âm và ngữ điệu · thêm ngành (Nhân sự, Logistics, Du lịch – Khách sạn...) · cấp Junior/Senior ·
 máy chủ và đăng nhập thật · dữ liệu nhà trường thật · bảng xếp hạng.
 
 ---

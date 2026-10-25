@@ -3,8 +3,10 @@ import Icon from '../components/Icons.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { BADGES } from '../lib/achievements.js'
 import { LEVELS, levelOf } from '../lib/progress.js'
-import { COMPANIES } from '../data/content.js'
 import { fmtDate } from '../lib/format.js'
+
+// Mốc điểm mở khóa doanh nghiệp (giống nhau ở mọi ngành).
+const UNLOCK_LABEL = { 60: 'doanh nghiệp cấp Trung bình', 150: 'doanh nghiệp cấp Nâng cao' }
 
 const EARN = [
   ['Hoàn thành bài học trước phỏng vấn', '+5 điểm, mỗi chủ đề một lần'],
@@ -31,7 +33,7 @@ export default function AchievementsPage() {
               <li key={l.name} className={i <= level.index ? 'done' : ''}>
                 <span>{i <= level.index ? <Icon name="check" size={12} /> : i + 1}</span>
                 <strong>{l.name}</strong>
-                <small>{l.min} điểm{COMPANIES.find((c) => c.unlockPoints === l.min && l.min > 0) ? ` · mở ${COMPANIES.find((c) => c.unlockPoints === l.min).name}` : ''}</small>
+                <small>{l.min} điểm{UNLOCK_LABEL[l.min] ? ` · mở ${UNLOCK_LABEL[l.min]}` : ''}</small>
               </li>
             ))}
           </ol>

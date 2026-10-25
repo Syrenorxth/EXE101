@@ -102,7 +102,7 @@ export default function FeedbackScreen({ result, setup, survey, onSurvey, onRetr
   const [playing, setPlaying] = useState(null)
   const { overall } = result
   const newlyUnlocked = COMPANIES.filter(
-    (c) => c.unlockPoints > result.pointsBefore && c.unlockPoints <= result.pointsAfter
+    (c) => (!setup.careerId || c.career === setup.careerId) && c.unlockPoints > result.pointsBefore && c.unlockPoints <= result.pointsAfter
   )
   const totalIssues = result.answers.reduce((n, a) => n + (a.sentenceIssues?.length || 0), 0)
   const [headline, advice] = VERDICT[tone(overall.avg)]

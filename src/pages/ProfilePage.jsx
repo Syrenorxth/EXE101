@@ -6,6 +6,7 @@ import Icon from '../components/Icons.jsx'
 import { navigate } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { DEFAULT_PREFS } from '../services/auth.js'
+import { CAREERS, DEFAULT_CAREER } from '../data/content.js'
 import { resetProgress } from '../lib/progress.js'
 import { STT_SUPPORTED, TTS_SUPPORTED } from '../lib/speech.js'
 import { fmtDate, downloadFile } from '../lib/format.js'
@@ -21,6 +22,7 @@ export default function ProfilePage() {
     school: user.school || '',
     major: user.major || '',
     year: user.year || '',
+    career: user.career || DEFAULT_CAREER,
     position: user.position || 'Intern',
     target: user.target || '',
     interviewDate: user.interviewDate || '',
@@ -76,6 +78,10 @@ export default function ProfilePage() {
                   <label className="field"><span>Năm học</span><input value={form.year} onChange={set('year')} /></label>
                 </div>
                 <div className="field-grid">
+                  <label className="field">
+                    <span>Ngành ứng tuyển</span>
+                    <select value={form.career} onChange={set('career')}>{CAREERS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                  </label>
                   <label className="field">
                     <span>Vị trí ứng tuyển</span>
                     <select value={form.position} onChange={set('position')}><option>Intern</option><option>Fresher</option></select>

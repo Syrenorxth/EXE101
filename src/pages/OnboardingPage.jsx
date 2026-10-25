@@ -4,10 +4,10 @@ import Icon from '../components/Icons.jsx'
 import Mascot from '../components/Mascot.jsx'
 import { navigate } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
-import { COMPANIES } from '../data/content.js'
+import { CAREERS, DEFAULT_CAREER, companiesOf } from '../data/content.js'
 
 const YEARS = ['Năm 2', 'Năm 3', 'Năm 4', 'Đã tốt nghiệp']
-const MAJORS = ['Kỹ thuật phần mềm', 'Hệ thống thông tin', 'Khoa học máy tính', 'Trí tuệ nhân tạo', 'An toàn thông tin', 'Khác']
+const MAJORS = ['Kỹ thuật phần mềm', 'Hệ thống thông tin', 'Khoa học máy tính', 'Trí tuệ nhân tạo', 'Marketing', 'Truyền thông đa phương tiện', 'Tài chính – Ngân hàng', 'Kế toán – Kiểm toán', 'Quản trị kinh doanh', 'Kinh doanh quốc tế', 'Ngôn ngữ Anh', 'Khác']
 const STEPS = ['Về bạn', 'Mục tiêu', 'Tùy chọn']
 const SAY = ['Chào bạn, mình là Pal!', 'Mục tiêu rõ thì luyện nhanh hơn!', 'Sắp xong rồi đó!']
 
@@ -20,7 +20,8 @@ export default function OnboardingPage() {
     major: user.major || MAJORS[0],
     year: user.year || 'Năm 3',
     position: user.position || 'Intern',
-    companyKind: user.companyKind || COMPANIES[1].kind,
+    career: user.career || DEFAULT_CAREER,
+    companyKind: user.companyKind || '',
     interviewDate: user.interviewDate || '',
     target: user.target || '',
     classCode: user.classCode || '',
@@ -85,6 +86,12 @@ export default function OnboardingPage() {
           <div className="form">
             <h1>Bạn đang chuẩn bị cho buổi phỏng vấn nào?</h1>
             <p className="muted">PalSpeak sẽ gợi ý lộ trình và đếm ngược đến ngày phỏng vấn.</p>
+            <span className="field-label">Ngành bạn muốn ứng tuyển</span>
+            <div className="chips">
+              {CAREERS.map((c) => (
+                <button key={c.id} type="button" className={`chip ${form.career === c.id ? 'on' : ''}`} onClick={() => setForm((f) => ({ ...f, career: c.id, companyKind: '' }))}>{c.name}</button>
+              ))}
+            </div>
             <span className="field-label">Vị trí ứng tuyển</span>
             <div className="choice-row">
               {[['Intern', 'Sinh viên chưa có kinh nghiệm đi làm'], ['Fresher', 'Mới tốt nghiệp hoặc dưới 1 năm kinh nghiệm']].map(([p, d]) => (
@@ -96,7 +103,7 @@ export default function OnboardingPage() {
             </div>
             <span className="field-label">Loại công ty bạn nhắm tới</span>
             <div className="chips">
-              {COMPANIES.map((c) => (
+              {companiesOf(form.career).map((c) => (
                 <button key={c.id} type="button" className={`chip ${form.companyKind === c.kind ? 'on' : ''}`} onClick={() => set('companyKind', c.kind)}>{c.kind}</button>
               ))}
             </div>

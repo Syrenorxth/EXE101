@@ -6,7 +6,7 @@ import Icon from '../components/Icons.jsx'
 import Mascot from '../components/Mascot.jsx'
 import { Link } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
-import { COMPANIES, TOPICS, PERSONAS } from '../data/content.js'
+import { COMPANIES, TOPICS, PERSONAS, DEFAULT_CAREER, careerById, companiesOf, defaultPersonaOf } from '../data/content.js'
 import { BADGES } from '../lib/achievements.js'
 import { statsOf, levelOf, isCompanyUnlocked, isTopicUnlocked, doneKey } from '../lib/progress.js'
 import { greeting, givenName, daysUntil, fromNow, fmtShort, score1 } from '../lib/format.js'
@@ -14,13 +14,13 @@ import { greeting, givenName, daysUntil, fromNow, fmtShort, score1 } from '../li
 const CRIT_TIPS = {
   relevance: 'Trả lời thẳng vào câu hỏi ngay câu đầu tiên, rồi mới giải thích.',
   clarity: 'Nói câu ngắn, bỏ từ đệm, giữ mỗi câu trả lời trong khoảng 1–2 phút.',
-  structure: 'Sắp xếp theo STAR với câu hành vi, định nghĩa → ví dụ → so sánh với câu kỹ thuật.'
+  structure: 'Sắp xếp theo STAR với câu hành vi, định nghĩa → ví dụ → so sánh với câu chuyên môn.'
 }
 
 // Gợi ý buổi luyện tiếp theo: chủ đề đầu tiên chưa làm, nếu đã làm hết thì chủ đề điểm thấp nhất.
 // Ưu tiên doanh nghiệp tuyển đúng vị trí trong hồ sơ (Intern/Fresher).
-function suggest(progress, position) {
-  const unlocked = COMPANIES.filter((c) => isCompanyUnlocked(progress, c))
+function suggest(progress, position, careerId) {
+  const unlocked = companiesOf(careerId).filter((c) => isCompanyUnlocked(progress, c))
   const fit = unlocked.filter((c) => c.positions.includes(position))
   const open = [...fit, ...unlocked.filter((c) => !fit.includes(c))]
   for (const c of open) {
@@ -40,7 +40,8 @@ export default function DashboardPage() {
   const { user, progress } = useApp()
   const stats = statsOf(progress)
   const level = levelOf(progress.points)
-  const next = suggest(progress, user.position)
+  const career = careerById(user.career || DEFAULT_CAREER)
+  const next = suggest(progress, user.position, career.id)
   const countdown = daysUntil(user.interviewDate)
   const chartPoints = [...progress.history].reverse().slice(-10).map((h) => ({ label: fmtShort(h.at), value: h.avg }))
   const weakest = stats.sessions ? Object.entries(stats.criteria).sort((a, b) => a[1] - b[1])[0] : null
@@ -85,7 +86,7 @@ export default function DashboardPage() {
               <h2>{next.company.name} · Chủ đề {next.topic.id}: {next.topic.name}</h2>
               <p className="muted">{next.reason}. {next.topic.goal}</p>
               <div className="next-meta">
-                <span><Icon name="user" size={15} /> {PERSONAS[next.topic.defaultPersona].name}, {PERSONAS[next.topic.defaultPersona].role.toLowerCase()}</span>
+                <span><Icon name="user" size={15} /> {PERSONAS[defaultPersonaOf(next.topic, career.id)].name}, {PERSONAS[defaultPersonaOf(next.topic, career.id)].role.toLowerCase()}</span>
                 <span><Icon name="clock" size={15} /> 10–15 phút</span>
                 <span><Icon name="globe" size={15} /> {user.prefs?.language === 'vi' ? 'Tiếng Việt' : 'English'}</span>
               </div>
@@ -150,11 +151,11 @@ export default function DashboardPage() {
       <div className="dash-grid wide">
         <section className="card">
           <div className="card-head">
-            <h2>Lộ trình doanh nghiệp</h2>
+            <h2>Lộ trình doanh nghiệp · {career.short}</h2>
             <Link to="/practice" className="link-more">Mở lộ trình <Icon name="arrowRight" size={14} /></Link>
           </div>
           <div className="roadmap">
-            {COMPANIES.map((c) => {
+            {companiesOf(career.id).map((c) => {
               const open = isCompanyUnlocked(progress, c)
               return (
                 <div key={c.id} className={`road-row ${open ? '' : 'locked'}`}>

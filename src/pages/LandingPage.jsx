@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PublicHeader, PublicFooter } from '../components/Layout.jsx'
 import { Avatar } from '../components/Brand.jsx'
 import { ScoreRing, RadarChart } from '../components/Charts.jsx'
@@ -6,17 +6,17 @@ import Icon from '../components/Icons.jsx'
 import Mascot, { Sparkles } from '../components/Mascot.jsx'
 import { Link, navigate } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
-import { COMPANIES, PERSONAS } from '../data/content.js'
+import { CAREERS, PERSONAS, companiesOf } from '../data/content.js'
 
 const PAINS = [
   ['Đứng hình khi bị hỏi dồn', 'Người phỏng vấn hỏi đào sâu ngay khi câu trả lời còn mơ hồ, giống hệt vòng phỏng vấn thật.'],
-  ['Không biết kể về dự án ở trường', 'Bài học STAR và khung trả lời kỹ thuật ngắn gọn trước mỗi chủ đề.'],
+  ['Không biết kể về kinh nghiệm khi chưa đi làm', 'Bài học STAR và khung trả lời chuyên môn của từng ngành, ngắn gọn trước mỗi chủ đề.'],
   ['Nhận xét chung chung, không biết sửa gì', 'Chỉ đúng câu nào bị lỗi, vì sao, và nên nói lại thế nào, kèm câu trả lời mẫu.']
 ]
 
 const FEATURES = [
-  ['building', 'Doanh nghiệp mô phỏng', 'Startup, công ty gia công phần mềm, công ty sản phẩm: mỗi nơi một quy trình và một mức độ khó.'],
-  ['users', '3 vai người phỏng vấn', 'HR thân thiện, Tech Lead yêu cầu cao, Quản lý bận rộn. Cùng câu hỏi, ba phong cách hỏi khác nhau.'],
+  ['building', '4 ngành, 12 doanh nghiệp', 'IT, Marketing, Tài chính – Kế toán, Kinh doanh: mỗi ngành 3 doanh nghiệp mô phỏng với quy trình và mức độ khó riêng.'],
+  ['users', '3 vai người phỏng vấn', 'HR thân thiện, chuyên gia của ngành yêu cầu cao, quản lý bận rộn. Cùng câu hỏi, ba phong cách hỏi khác nhau.'],
   ['mic', 'Nói như phỏng vấn thật', 'Câu hỏi được đọc thành tiếng, bạn trả lời bằng micro. Chạy ngay trên trình duyệt, không cần cài thêm.'],
   ['clock', 'Thử thách sát thực tế', 'Câu hỏi đào sâu, đồng hồ 45–90 giây mỗi câu, tình huống thay đổi đột ngột ở chủ đề tổng hợp.'],
   ['target', 'Chấm 3 tiêu chí', 'Relevance, Clarity, Structure cho từng câu, theo khung STAR hoặc định nghĩa → ví dụ → so sánh.'],
@@ -24,8 +24,8 @@ const FEATURES = [
 ]
 
 const STEPS = [
-  ['Chọn doanh nghiệp', 'Bắt đầu từ PixelStart, tích điểm để mở NovaTech và GlobalCore.'],
-  ['Học nhanh 3 phút', 'Phương pháp STAR, khung xử lý sự cố, từ vựng cần dùng.'],
+  ['Chọn ngành và doanh nghiệp', 'Bắt đầu từ doanh nghiệp cấp Cơ bản của ngành bạn, tích điểm để mở cấp Trung bình và Nâng cao.'],
+  ['Học nhanh 3 phút', 'Phương pháp STAR, khung trả lời chuyên môn, từ vựng của ngành.'],
   ['Phỏng vấn mô phỏng', 'Bằng tiếng Anh hoặc tiếng Việt, gõ phím hoặc nói qua micro.'],
   ['Nhận phản hồi chi tiết', 'Điểm, lỗi từng câu, câu mẫu. Luyện lại và theo dõi tiến bộ.']
 ]
@@ -33,19 +33,35 @@ const STEPS = [
 const FAQ = [
   ['PalSpeak có mất phí không?', 'Sinh viên dùng miễn phí ở bản thử nghiệm. Khi nhà trường đăng ký, toàn bộ sinh viên của trường được dùng đầy đủ tính năng.'],
   ['Tôi cần cài thêm phần mềm gì?', 'Không. PalSpeak chạy trên trình duyệt. Để trả lời bằng micro, hãy dùng Chrome hoặc Edge.'],
-  ['Phỏng vấn bằng tiếng Anh hay tiếng Việt?', 'Mặc định là tiếng Anh vì nhiều công ty IT phỏng vấn một phần bằng tiếng Anh. Bạn có thể đổi sang tiếng Việt; phần nhận xét luôn bằng tiếng Việt.'],
+  ['Phỏng vấn bằng tiếng Anh hay tiếng Việt?', 'Mặc định là tiếng Anh vì nhiều doanh nghiệp, nhất là công ty nước ngoài, phỏng vấn một phần bằng tiếng Anh. Bạn có thể đổi sang tiếng Việt; phần nhận xét luôn bằng tiếng Việt.'],
   ['Điểm số có phải đánh giá chính thức không?', 'Không. Điểm chỉ giúp bạn biết cần luyện thêm phần nào, không thay thế đánh giá của nhà tuyển dụng.'],
   ['Dữ liệu của tôi được lưu ở đâu?', 'Ở bản thử nghiệm, tài khoản và tiến độ được lưu ngay trên trình duyệt của bạn. Giọng nói do trình duyệt xử lý, PalSpeak không lưu bản ghi âm.'],
   ['Nhà trường xem được những gì?', 'Số liệu tổng hợp theo lớp: số buổi luyện, điểm trung bình theo tiêu chí, sinh viên cần hỗ trợ. Nhà trường không xem được nội dung câu trả lời.']
 ]
 
+const CAREER_ICON = { it: 'code', marketing: 'trend', finance: 'coins', sales: 'briefcase' }
+
+// Khung minh họa tự đổi lần lượt qua các ngành.
+const SCENES = [
+  { company: 'NovaTech', round: 'Phỏng vấn kỹ thuật', persona: 'techlead', score: '8.0', q: 'Explain the difference between REST API and GraphQL.', a: 'REST organizes the API around resources, while GraphQL…' },
+  { company: 'Lumina Brands', round: 'Phỏng vấn Marketing', persona: 'mktlead', score: '7.5', q: 'Which metrics would you use to measure a Facebook ad campaign?', a: 'First, I define the campaign goal, then I track reach, CTR…' },
+  { company: 'Vertex Bank', round: 'Phỏng vấn nghiệp vụ', persona: 'finlead', score: '8.5', q: 'Why can a profitable company still run out of cash?', a: 'Profit is recognised on an accrual basis, while cash flow…' },
+  { company: 'Sunrise Distribution', round: 'Phỏng vấn kinh doanh', persona: 'saleslead', score: '7.8', q: 'A major customer threatens to cancel the contract. What do you do?', a: 'First, I listen and confirm the problem, then I…' }
+]
+
 function HeroMockup() {
-  const p = PERSONAS.techlead
+  const [i, setI] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setI((n) => (n + 1) % SCENES.length), 4500)
+    return () => clearInterval(id)
+  }, [])
+  const scene = SCENES[i]
+  const p = PERSONAS[scene.persona]
   return (
     <div className="mock" aria-hidden="true">
-      <div className="mock-call">
+      <div className="mock-call" key={i}>
         <div className="mock-top">
-          <span className="live-dot" /> NovaTech · Phỏng vấn kỹ thuật
+          <span className="live-dot" /> {scene.company} · {scene.round}
           <span className="mock-timer">0:52</span>
         </div>
         <div className="mock-stage">
@@ -58,20 +74,21 @@ function HeroMockup() {
           <small>{p.role}</small>
           <div className="wave on"><span /><span /><span /><span /><span /></div>
         </div>
-        <div className="mock-question">
-          “Explain the difference between REST API and GraphQL.”
-        </div>
-        <div className="mock-answer">
+        <div className="mock-question mock-fade">“{scene.q}”</div>
+        <div className="mock-answer mock-fade">
           <Icon name="mic" size={16} />
-          <span>REST organizes the API around resources, while GraphQL…</span>
+          <span>{scene.a}</span>
         </div>
       </div>
       <div className="mock-float f1">
         <span className="float-label">Structure</span>
-        <strong>8.0</strong>
+        <strong>{scene.score}</strong>
       </div>
       <div className="mock-float f2">
         <Icon name="award" size={16} /> Huy hiệu mới: Dám nói
+      </div>
+      <div className="mock-dots">
+        {SCENES.map((_, n) => <span key={n} className={n === i ? 'on' : ''} />)}
       </div>
     </div>
   )
@@ -101,10 +118,10 @@ export default function LandingPage() {
         <Sparkles count={18} />
         <div className="public-inner hero-grid">
           <div className="hero-copy">
-            <span className="hero-eyebrow"><Icon name="sparkles" size={14} /> Luyện phỏng vấn Intern & Fresher ngành IT</span>
+            <span className="hero-eyebrow"><Icon name="sparkles" size={14} /> Luyện phỏng vấn Intern & Fresher cho nhiều ngành nghề</span>
             <h1>Tập phỏng vấn với AI <em>trước khi</em> gặp nhà tuyển dụng thật</h1>
             <p>
-              Phỏng vấn mô phỏng theo đúng trình tự tại doanh nghiệp IT Việt Nam, nói bằng giọng thật,
+              Phỏng vấn mô phỏng theo đúng trình tự tại doanh nghiệp Việt Nam ở các ngành IT, Marketing, Tài chính – Kế toán và Kinh doanh, nói bằng giọng thật,
               nhận phản hồi chỉ rõ từng câu cần sửa. Mỗi buổi chỉ 10–15 phút.
             </p>
             <div className="hero-cta">
@@ -122,11 +139,11 @@ export default function LandingPage() {
           <HeroMockup />
         </div>
         <div className="public-inner logos">
-          <span>Mô phỏng quy trình tuyển dụng của</span>
-          {COMPANIES.map((c) => (
+          <span>Luyện phỏng vấn cho các ngành</span>
+          {CAREERS.map((c) => (
             <span key={c.id} className="logo-word">
-              <Icon name="building" size={16} /> {c.name}
-              <small>{c.kind}</small>
+              <Icon name={CAREER_ICON[c.id]} size={16} /> {c.name}
+              <small>{companiesOf(c.id).length} doanh nghiệp</small>
             </span>
           ))}
         </div>
@@ -195,7 +212,7 @@ export default function LandingPage() {
             <ul className="ticks">
               <li><Icon name="check" size={16} /> Relevance: trả lời đúng trọng tâm câu hỏi</li>
               <li><Icon name="check" size={16} /> Clarity: rõ ràng, độ dài hợp lý</li>
-              <li><Icon name="check" size={16} /> Structure: có khung STAR hoặc khung kỹ thuật</li>
+              <li><Icon name="check" size={16} /> Structure: có khung STAR hoặc khung trả lời chuyên môn</li>
             </ul>
           </div>
           <div className="preview-card card">
@@ -224,10 +241,10 @@ export default function LandingPage() {
           <div className="grid grid-2">
             <article className="audience card">
               <span className="feature-icon"><Icon name="user" size={22} /></span>
-              <h3>Sinh viên IT năm 3–4</h3>
-              <p>Chuẩn bị phỏng vấn thực tập (OJT) và vị trí Fresher.</p>
+              <h3>Sinh viên năm 3–4 và mới tốt nghiệp</h3>
+              <p>Chuẩn bị phỏng vấn thực tập và vị trí Fresher ở ngành IT, Marketing, Tài chính – Kế toán, Kinh doanh.</p>
               <ul className="ticks">
-                <li><Icon name="check" size={16} /> Lộ trình từ câu hỏi hành vi đến vòng kỹ thuật</li>
+                <li><Icon name="check" size={16} /> Lộ trình từ câu hỏi hành vi đến vòng chuyên môn</li>
                 <li><Icon name="check" size={16} /> Luyện lại bao nhiêu lần cũng được, không sợ bị đánh giá</li>
                 <li><Icon name="check" size={16} /> Điểm rèn luyện, huy hiệu, mở khóa doanh nghiệp mới</li>
               </ul>
@@ -260,7 +277,7 @@ export default function LandingPage() {
               <p className="price">Miễn phí</p>
               <p className="muted">Dùng ngay, không cần thẻ thanh toán.</p>
               <ul className="ticks">
-                <li><Icon name="check" size={16} /> 3 doanh nghiệp, 3 chủ đề</li>
+                <li><Icon name="check" size={16} /> 4 ngành, 12 doanh nghiệp, 3 chủ đề</li>
                 <li><Icon name="check" size={16} /> Giọng nói và chấm 3 tiêu chí</li>
                 <li><Icon name="check" size={16} /> Lịch sử và biểu đồ tiến bộ</li>
               </ul>

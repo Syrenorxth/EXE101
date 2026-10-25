@@ -1,18 +1,19 @@
-import { COMPANIES, TOPICS } from '../data/content.js'
+import { TOPICS, careerById, companiesOf } from '../data/content.js'
 import { isCompanyUnlocked, doneKey } from '../lib/progress.js'
 import Icon from '../components/Icons.jsx'
 
-export default function CompanyScreen({ progress, onPick, onBack }) {
+export default function CompanyScreen({ careerId, progress, onPick, onBack }) {
+  const career = careerById(careerId)
   return (
     <section className="screen">
       <div className="screen-intro">
         <button className="link-back" onClick={onBack}><Icon name="arrowLeft" size={16} /> Ngành nghề</button>
         <h2>Chọn doanh nghiệp mô phỏng</h2>
-        <p className="muted">Ngành Công nghệ thông tin · Mô phỏng theo ba kiểu doanh nghiệp IT phổ biến ở Việt Nam. Doanh nghiệp khó hơn mở khi đủ điểm rèn luyện.</p>
+        <p className="muted">Ngành {career.name} · Mô phỏng theo ba kiểu doanh nghiệp phổ biến ở Việt Nam. Doanh nghiệp khó hơn mở khi đủ điểm rèn luyện.</p>
       </div>
 
       <div className="grid grid-3">
-        {COMPANIES.map((c) => {
+        {companiesOf(career.id).map((c) => {
           const open = isCompanyUnlocked(progress, c)
           const doneCount = TOPICS.filter((t) => progress.done[doneKey(c.id, t.id)] !== undefined).length
           const lockPct = Math.min(100, (progress.points / c.unlockPoints) * 100)

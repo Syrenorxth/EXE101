@@ -10,7 +10,7 @@ import InterviewScreen from '../screens/InterviewScreen.jsx'
 import FeedbackScreen from '../screens/FeedbackScreen.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { navigate } from '../router.jsx'
-import { COMPANIES, TOPICS } from '../data/content.js'
+import { COMPANIES, TOPICS, DEFAULT_CAREER, careerOf, defaultPersonaOf } from '../data/content.js'
 import { AI_ENABLED } from '../lib/aiEngine.js'
 import { completeLesson, recordSession, pointsFor, markStarted, saveSurvey, isCompanyUnlocked, isTopicUnlocked } from '../lib/progress.js'
 import { awardBadges } from '../lib/achievements.js'
@@ -30,9 +30,9 @@ const TITLES = {
 // Đọc ?company=&topic= từ địa chỉ (từ nút "Bắt đầu" ở trang Tổng quan), chỉ nhận nội dung đã mở khóa.
 function initialFrom(query, progress) {
   const company = COMPANIES.find((c) => c.id === query.company && isCompanyUnlocked(progress, c))
-  if (!company) return { company: null, topicId: 1 }
+  if (!company) return { company: null, topicId: 1, careerId: null }
   const t = Number(query.topic)
-  return { company, topicId: TOPICS.some((x) => x.id === t) && isTopicUnlocked(progress, company.id, t) ? t : 1 }
+  return { company, careerId: company.career, topicId: TOPICS.some((x) => x.id === t) && isTopicUnlocked(progress, company.id, t) ? t : 1 }
 }
 
 export default function PracticePage({ query }) {
@@ -43,11 +43,11 @@ export default function PracticePage({ query }) {
   const [setup, setSetup] = useState(() => {
     const position = user.position || 'Intern'
     return {
-      careerId: 'it',
+      careerId: init.careerId || user.career || DEFAULT_CAREER,
       companyId: init.company?.id ?? null,
       position: init.company ? (init.company.positions.includes(position) ? position : init.company.positions[0]) : position,
       topicId: init.topicId,
-      personaId: TOPICS[init.topicId - 1].defaultPersona,
+      personaId: defaultPersonaOf(TOPICS[init.topicId - 1], init.careerId || user.career || DEFAULT_CAREER),
       language: prefs.language,
       timeChallenge: prefs.timeChallenge,
       voice: prefs.voice,
@@ -65,7 +65,7 @@ export default function PracticePage({ query }) {
 
   const chooseCompany = (company) => {
     const position = company.positions.includes(setup.position) ? setup.position : company.positions[0]
-    update({ companyId: company.id, position, topicId: 1, personaId: TOPICS[0].defaultPersona })
+    update({ companyId: company.id, careerId: company.career, position, topicId: 1, personaId: defaultPersonaOf(TOPICS[0], company.career) })
     go('setup')
   }
 
@@ -89,6 +89,7 @@ export default function PracticePage({ query }) {
     const recorded = recordSession(progress, {
       id,
       companyId: setup.companyId,
+      careerId: careerOf(setup.companyId),
       topicId: setup.topicId,
       position: setup.position,
       personaId: setup.personaId,
@@ -121,8 +122,8 @@ export default function PracticePage({ query }) {
     <AppShell title={title} subtitle={subtitle} focus={screen === 'interview'}>
       {STEP_OF[screen] !== undefined && screen !== 'interview' && <Stepper current={STEP_OF[screen]} />}
 
-      {screen === 'career' && <CareerScreen onPick={(careerId) => { update({ careerId }); go('companies') }} />}
-      {screen === 'companies' && <CompanyScreen progress={progress} onPick={chooseCompany} onBack={() => go('career')} />}
+      {screen === 'career' && <CareerScreen current={setup.careerId} onPick={(careerId) => { update({ careerId }); go('companies') }} />}
+      {screen === 'companies' && <CompanyScreen careerId={setup.careerId} progress={progress} onPick={chooseCompany} onBack={() => go('career')} />}
       {screen === 'setup' && (
         <SetupScreen
           setup={setup}
@@ -136,6 +137,7 @@ export default function PracticePage({ query }) {
       {screen === 'learn' && (
         <LearnScreen
           topicId={setup.topicId}
+          careerId={setup.careerId}
           alreadyDone={Boolean(progress.lessons[setup.topicId])}
           onDone={finishLesson}
           onBack={() => go('setup')}
@@ -159,7 +161,7 @@ export default function PracticePage({ query }) {
           onRetry={startInterview}
           onNextTopic={() => {
             const next = Math.min(TOPICS.length, setup.topicId + 1)
-            update({ topicId: next, personaId: TOPICS[next - 1].defaultPersona })
+            update({ topicId: next, personaId: defaultPersonaOf(TOPICS[next - 1], setup.careerId) })
             go('setup')
           }}
           onRoadmap={() => go('companies')}

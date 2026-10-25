@@ -6,7 +6,7 @@ import { EmptyState } from '../components/Feedback.jsx'
 import Icon from '../components/Icons.jsx'
 import { Link } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
-import { COMPANIES, TOPICS, PERSONAS } from '../data/content.js'
+import { COMPANIES, TOPICS, PERSONAS, CAREERS, companiesOf } from '../data/content.js'
 import { statsOf, doneKey } from '../lib/progress.js'
 import { fmtDateTime, fmtShort, score1, downloadFile, toCsv } from '../lib/format.js'
 
@@ -116,7 +116,11 @@ export default function HistoryPage() {
           <div className="filters">
             <select value={company} onChange={(e) => setCompany(e.target.value)} aria-label="Lọc theo doanh nghiệp">
               <option value="all">Mọi doanh nghiệp</option>
-              {COMPANIES.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {CAREERS.map((k) => (
+                <optgroup key={k.id} label={k.name}>
+                  {companiesOf(k.id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </optgroup>
+              ))}
             </select>
             <select value={topic} onChange={(e) => setTopic(e.target.value)} aria-label="Lọc theo chủ đề">
               <option value="all">Mọi chủ đề</option>

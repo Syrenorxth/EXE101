@@ -1,5 +1,5 @@
 // Người phỏng vấn dùng AI thật (qua proxy /api/chat của Vite, xem vite.config.js).
-import { PERSONAS, TOPICS, POSITIONS, COMPANIES, REVERSE_QUESTION } from '../data/content.js'
+import { PERSONAS, TOPICS, POSITIONS, COMPANIES, REVERSE_QUESTION, careerById, careerOf } from '../data/content.js'
 import { finalize, splitSentences, buildPlan } from './mockEngine.js'
 
 /* global __AI_ENABLED__, __AI_MODEL__ */
@@ -31,17 +31,19 @@ function systemPrompt(ctx, plan) {
   const persona = PERSONAS[ctx.personaId]
   const topic = TOPICS.find((t) => t.id === ctx.topicId)
   const company = COMPANIES.find((c) => c.id === ctx.companyId)
+  const career = careerById(ctx.careerId || careerOf(ctx.companyId))
   const lang = ctx.language === 'en' ? 'en' : 'vi'
   const language = lang === 'en'
     ? 'English'
-    : 'Tiếng Việt, giữ nguyên thuật ngữ kỹ thuật tiếng Anh như cách người phỏng vấn ở Việt Nam thường nói'
+    : 'Tiếng Việt, giữ nguyên thuật ngữ chuyên ngành tiếng Anh như cách người phỏng vấn ở Việt Nam thường nói'
   const order = plan
     .map((q, i) => `${i + 1}. [${q.stage}]${q.bridge ? ` Câu chuyển ý trước khi hỏi: "${q.bridge[lang]}".` : ''} Câu hỏi: "${q[lang]}"`)
     .join('\n')
 
-  return `Bạn đóng vai người phỏng vấn trong PalSpeak, nền tảng luyện phỏng vấn cho sinh viên IT Việt Nam.
+  return `Bạn đóng vai người phỏng vấn trong PalSpeak, nền tảng luyện phỏng vấn cho sinh viên Việt Nam ở nhiều ngành nghề.
 Vai của bạn: ${persona.name} – ${persona.role}. Phong cách: ${persona.trait}.
 Doanh nghiệp: ${company.name} (${company.kind}, mức độ ${company.level}). ${company.desc}
+Ngành: ${career.name}.
 Vị trí ứng tuyển: ${ctx.position} (${POSITIONS[ctx.position]}).
 Chủ đề: ${topic.name}. Mục tiêu: ${topic.goal}
 Ngôn ngữ phỏng vấn: ${language}.
@@ -82,7 +84,7 @@ function toMessage(raw) {
 }
 
 export function createAiSession(ctx) {
-  const plan = buildPlan(ctx.topicId)
+  const plan = buildPlan(ctx.topicId, ctx.careerId || careerOf(ctx.companyId))
   return {
     ctx,
     plan,
@@ -142,14 +144,15 @@ export async function aiEvaluate(session) {
   const { ctx } = session
   const topic = TOPICS.find((t) => t.id === ctx.topicId)
   const company = COMPANIES.find((c) => c.id === ctx.companyId)
+  const career = careerById(ctx.careerId || careerOf(ctx.companyId))
   const transcript = session.transcript.map((l) => `${l.who}: ${l.text}`).join('\n')
 
-  const prompt = `Bạn là chuyên gia đánh giá phỏng vấn tuyển dụng IT tại Việt Nam.
+  const prompt = `Bạn là chuyên gia đánh giá phỏng vấn tuyển dụng ngành ${career.name} tại Việt Nam.
 Dưới đây là bản ghi buổi phỏng vấn vị trí ${ctx.position} tại ${company.name}, chủ đề "${topic.name}".
 Chấm từng câu hỏi chính (gộp cả câu trả lời cho câu đào sâu của nó) theo 3 tiêu chí, thang 1–10:
 - relevance: đúng trọng tâm câu hỏi
 - clarity: diễn đạt rõ ràng, độ dài hợp lý
-- structure: có cấu trúc (STAR với câu hành vi; định nghĩa → ví dụ → so sánh với câu kiến thức; khoanh vùng → tìm nguyên nhân → khắc phục → báo cáo với câu xử lý sự cố)
+- structure: có cấu trúc (STAR với câu hành vi; định nghĩa → ví dụ → so sánh với câu kiến thức; khoanh vùng → tìm nguyên nhân → khắc phục → báo cáo với câu xử lý sự cố hoặc tình huống khó)
 Chấm sát thực tế cấp độ ${ctx.position}, không cho điểm cao nếu câu trả lời sơ sài. Câu bị hết giờ thì trừ điểm clarity.${session.spoken ? '\nỨng viên trả lời bằng giọng nói được chuyển thành chữ tự động: bỏ qua lỗi chính tả hoặc dấu câu do máy nhận diện, chỉ đánh giá nội dung và cách diễn đạt.' : ''}
 Với mỗi câu hỏi chính:
 - "answer": chép NGUYÊN VĂN câu trả lời của ứng viên (gộp cả phần trả lời câu đào sâu), không tóm tắt.

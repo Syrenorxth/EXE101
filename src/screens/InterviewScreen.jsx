@@ -37,7 +37,7 @@ const KIND_LABEL = { followup: 'Câu hỏi đào sâu', situation: 'Tình huốn
 const TIPS = {
   behavior: ['Bối cảnh: chuyện xảy ra ở đâu, khi nào', 'Nhiệm vụ: bạn chịu trách nhiệm gì', 'Hành động: chính bạn đã làm gì', 'Kết quả: con số, bài học'],
   tech: ['Định nghĩa ngắn gọn', 'Ví dụ từ dự án của bạn', 'So sánh, đánh đổi: khi nào nên dùng'],
-  incident: ['Bình tĩnh, khoanh vùng lỗi', 'Tìm nguyên nhân: log, thay đổi gần nhất', 'Khắc phục hoặc rollback', 'Báo cáo, phòng tránh lặp lại'],
+  incident: ['Bình tĩnh, xác nhận và khoanh vùng vấn đề', 'Tìm nguyên nhân', 'Khắc phục hoặc đề xuất giải pháp', 'Báo cáo, phòng tránh lặp lại'],
   situation: ['Xác nhận lại yêu cầu mới', 'Sắp xếp ưu tiên', 'Nói rõ rủi ro và đề xuất phương án'],
   reverse: ['Hỏi về công việc, nhóm hoặc lộ trình học tập', 'Tránh hỏi ngay về lương thưởng ở vòng đầu']
 }
