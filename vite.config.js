@@ -3,12 +3,13 @@ import react from '@vitejs/plugin-react'
 
 // API key được đọc từ file .env và chỉ dùng trong proxy của máy chủ dev,
 // trình duyệt chỉ gọi /api/chat nên không bao giờ thấy key.
+// Khi đưa lên Cloudflare Pages, /api/chat do functions/api/chat.js xử lý.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const base = env.AI_BASE_URL || 'https://api.openai.com/v1'
   const url = new URL(base)
   const basePath = url.pathname.replace(/\/$/, '')
-  const enabled = Boolean(env.AI_API_KEY)
+  const enabled = Boolean(env.AI_API_KEY) || env.AI_ENABLED === 'true'
 
   return {
     plugins: [react()],
@@ -19,7 +20,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       open: true,
-      proxy: enabled
+      proxy: env.AI_API_KEY
         ? {
             '/api/chat': {
               target: url.origin,

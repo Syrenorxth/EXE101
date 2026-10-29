@@ -140,6 +140,7 @@ Nếu AI lỗi giữa buổi, app cho nút **Chuyển sang chế độ demo** đ
 3. Tắt app (`Ctrl + C`) rồi chạy lại `npm run dev`. App chỉ đọc file `.env` lúc khởi động.
 
 API key chỉ nằm ở máy chủ của Vite (xem `vite.config.js`), trình duyệt chỉ gọi `/api/chat` nên **không nhìn thấy key**.
+Khi đưa lên mạng, việc này do `functions/api/chat.js` chạy trên Cloudflare đảm nhận (xem mục 13).
 **Tuyệt đối không** đưa file `.env` lên GitHub hay gửi cho người khác (file này đã nằm trong `.gitignore`).
 
 ## 6. Giọng nói và ngôn ngữ phỏng vấn
@@ -298,6 +299,8 @@ code/
 ├── package.json
 ├── vite.config.js             # Cấu hình Vite + proxy gọi AI (giấu API key)
 ├── .env.example               # Mẫu cấu hình AI (sao chép thành .env)
+├── functions/
+│   └── api/chat.js            # Hàm chạy trên Cloudflare: nhận /api/chat, gọi AI bằng key giữ ở máy chủ
 └── src/
     ├── main.jsx               # Điểm khởi động React
     ├── App.jsx                # Định tuyến các trang, chặn trang cần đăng nhập
@@ -355,16 +358,33 @@ code/
 - `loadProgress` / `saveProgress` trong `src/lib/progress.js` cũng chuyển sang API.
 - Xác thực và băm mật khẩu phải làm ở máy chủ (bản này chỉ mô phỏng).
 - `services/schoolData.js` đang sinh dữ liệu mẫu; bản thật lấy sinh viên theo mã lớp từ máy chủ.
-- Chế độ AI hiện gọi qua proxy của máy chủ dev Vite; khi đưa lên mạng cần một máy chủ riêng giữ API key và chuyển tiếp `/api/chat`.
+- Khi cần database thật, dùng **Cloudflare D1** (cùng nền tảng với hosting) để toàn bộ web vẫn nằm một chỗ.
 
-**Build bản chạy thật (tùy chọn):**
+**Đưa lên mạng bằng Cloudflare Pages (một nơi cho cả web, gói miễn phí):**
+
+Giao diện chạy trên Cloudflare Pages, còn `/api/chat` do `functions/api/chat.js` xử lý ngay trên Cloudflare, nên không cần thuê máy chủ riêng.
+Chi phí hosting 0 VND theo gói miễn phí, chỉ tốn tiền tên miền nếu muốn dùng tên riêng (không bắt buộc, Cloudflare cấp sẵn địa chỉ `ten-du-an.pages.dev`).
+Hàm `/api/chat` tính vào hạn mức miễn phí của Cloudflare Workers (khoảng 100.000 lượt mỗi ngày lúc viết; nên kiểm tra lại trên trang của Cloudflare).
+
+1. Đưa code lên GitHub (đã có repo của nhóm).
+2. Vào dash.cloudflare.com → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**, chọn repo PalSpeak.
+3. Cài đặt build: Framework preset **Vite** (hoặc None), Build command `npm run build`, Build output directory `dist`.
+4. Mục **Settings → Variables and Secrets**, thêm:
+   - `AI_API_KEY`: API key (chọn loại **Secret**);
+   - `AI_BASE_URL`, `AI_MODEL`: giống trong `.env.example`;
+   - `AI_ENABLED` = `true` (để giao diện bật chế độ AI ngay cả khi lúc build không đọc được Secret).
+5. Bấm **Save and Deploy**. Mỗi lần push lên GitHub, Cloudflare tự build và cập nhật web.
+
+Không đặt các biến AI thì web vẫn chạy bình thường ở **chế độ demo**.
+
+**Chạy thử bản build trên máy (tùy chọn):**
 
 ```bash
 npm run build
 npm run preview
 ```
 
-Thư mục `dist/` là bản web tĩnh. Bản này chỉ chạy **chế độ demo** (vì không có proxy giữ API key).
+`npm run preview` chỉ có giao diện tĩnh, không có `/api/chat`, nên chỉ chạy **chế độ demo**.
 
 ## 14. Phạm vi MVP
 
@@ -374,7 +394,7 @@ phản hồi 3 tiêu chí, chỉ rõ lỗi từng câu, câu trả lời mẫu t
 lịch sử và biểu đồ tiến bộ · tài khoản mô phỏng · bảng điều khiển nhà trường bản xem trước · khảo sát sau buổi.
 
 **Để sau MVP:** đánh giá phát âm và ngữ điệu · thêm ngành (Nhân sự, Logistics, Du lịch – Khách sạn...) · cấp Junior/Senior ·
-máy chủ và đăng nhập thật · dữ liệu nhà trường thật · bảng xếp hạng.
+máy chủ và đăng nhập thật (Cloudflare D1) · dữ liệu nhà trường thật · bảng xếp hạng.
 
 ---
 
