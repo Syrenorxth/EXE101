@@ -6,12 +6,11 @@ import { EmptyState } from '../components/Feedback.jsx'
 import Icon from '../components/Icons.jsx'
 import { Link } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
-import { COMPANIES, TOPICS, PERSONAS, CAREERS, companiesOf } from '../data/content.js'
-import { statsOf, doneKey } from '../lib/progress.js'
+import { TOPICS, PERSONAS, CAREERS, companiesOf } from '../data/content.js'
+import { statsOf, groupKey, sessionLabel, isCvSession } from '../lib/progress.js'
 import { fmtDateTime, fmtShort, score1, downloadFile, toCsv } from '../lib/format.js'
 
-const companyName = (id) => COMPANIES.find((c) => c.id === id)?.name || id
-const topicName = (id) => TOPICS.find((t) => t.id === id)?.name || ''
+const matchCompany = (h, company) => company === 'all' || (company === 'cv' ? isCvSession(h) : h.companyId === company)
 
 export default function HistoryPage() {
   const { progress } = useApp()
@@ -20,16 +19,16 @@ export default function HistoryPage() {
   const stats = statsOf(progress)
 
   const rows = useMemo(() => progress.history.filter((h) =>
-    (company === 'all' || h.companyId === company) && (topic === 'all' || String(h.topicId) === topic)
+    matchCompany(h, company) && (topic === 'all' || String(h.topicId) === topic)
   ), [progress.history, company, topic])
 
   // So sánh lần đầu và lần gần nhất của từng chủ đề (chỉ số H2 của MVP).
   const compare = useMemo(() => {
     const groups = {}
-    for (const h of [...progress.history].reverse()) (groups[doneKey(h.companyId, h.topicId)] ||= []).push(h)
-    return Object.values(groups).filter((g) => g.length >= 2).map((g) => ({
-      companyId: g[0].companyId,
-      topicId: g[0].topicId,
+    for (const h of [...progress.history].reverse()) (groups[groupKey(h)] ||= []).push(h)
+    return Object.entries(groups).filter(([, g]) => g.length >= 2).map(([key, g]) => ({
+      key,
+      title: sessionLabel(g[0]).title,
       first: g[0].avg,
       last: g[g.length - 1].avg,
       count: g.length
@@ -40,7 +39,7 @@ export default function HistoryPage() {
     const data = [
       ['Thời gian', 'Doanh nghiệp', 'Vị trí', 'Chủ đề', 'Người phỏng vấn', 'Ngôn ngữ', 'Chế độ', 'Relevance', 'Clarity', 'Structure', 'Điểm TB', 'Điểm RL'],
       ...rows.map((h) => [
-        fmtDateTime(h.at), companyName(h.companyId), h.position, `${h.topicId}. ${topicName(h.topicId)}`, PERSONAS[h.personaId]?.name,
+        fmtDateTime(h.at), sessionLabel(h).company, h.position, sessionLabel(h).topic, PERSONAS[h.personaId]?.name,
         h.language === 'vi' ? 'Tiếng Việt' : 'English', h.mode === 'ai' ? 'AI' : 'Demo',
         score1(h.result?.overall?.relevance), score1(h.result?.overall?.clarity), score1(h.result?.overall?.structure), score1(h.avg), h.earned
       ])
@@ -91,9 +90,9 @@ export default function HistoryPage() {
               {compare.map((c) => {
                 const d = c.last - c.first
                 return (
-                  <li key={`${c.companyId}${c.topicId}`}>
+                  <li key={c.key}>
                     <div>
-                      <strong>{companyName(c.companyId)} · Chủ đề {c.topicId}</strong>
+                      <strong>{c.title}</strong>
                       <small>{c.count} lần luyện</small>
                     </div>
                     <span className="compare-nums">
@@ -116,6 +115,7 @@ export default function HistoryPage() {
           <div className="filters">
             <select value={company} onChange={(e) => setCompany(e.target.value)} aria-label="Lọc theo doanh nghiệp">
               <option value="all">Mọi doanh nghiệp</option>
+              <option value="cv">Phỏng vấn theo CV & JD</option>
               {CAREERS.map((k) => (
                 <optgroup key={k.id} label={k.name}>
                   {companiesOf(k.id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -137,8 +137,8 @@ export default function HistoryPage() {
               {rows.map((h) => (
                 <tr key={h.id || h.at}>
                   <td>{fmtDateTime(h.at)}{h.sample && <span className="tag inline">Mẫu</span>}</td>
-                  <td>{companyName(h.companyId)}<small className="block muted">{h.position}</small></td>
-                  <td>{h.topicId}. {topicName(h.topicId)}</td>
+                  <td>{sessionLabel(h).company}<small className="block muted">{h.position}</small></td>
+                  <td>{sessionLabel(h).topic}</td>
                   <td>{PERSONAS[h.personaId]?.name}</td>
                   <td>{h.language === 'vi' ? 'Tiếng Việt' : h.language === 'en' ? 'English' : '–'}</td>
                   <td className="num"><span className={`score-pill tone-${tone(h.avg)}`}>{score1(h.avg)}</span><Meter value={h.avg} className="hide-sm" /></td>

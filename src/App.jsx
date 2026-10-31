@@ -54,7 +54,7 @@ function Routes() {
     case 'onboarding': return <OnboardingPage />
     case 'dashboard': return user.role === 'school' ? <Redirect to="/school" /> : <DashboardPage />
     case 'practice': return <PracticePage key={search} query={query} />
-    case 'cv-interview': return <CvInterviewPage />
+    case 'cv-interview': return <CvInterviewPage key={search} from={query.from} />
     case 'history': return second ? <SessionPage id={second} /> : <HistoryPage />
     case 'library': return <LibraryPage tab={query.tab} />
     case 'achievements': return <AchievementsPage />

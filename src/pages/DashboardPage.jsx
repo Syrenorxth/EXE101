@@ -6,9 +6,9 @@ import Icon from '../components/Icons.jsx'
 import Mascot from '../components/Mascot.jsx'
 import { Link } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
-import { COMPANIES, TOPICS, PERSONAS, DEFAULT_CAREER, careerById, companiesOf, defaultPersonaOf } from '../data/content.js'
+import { TOPICS, PERSONAS, DEFAULT_CAREER, careerById, companiesOf, defaultPersonaOf } from '../data/content.js'
 import { BADGES } from '../lib/achievements.js'
-import { statsOf, levelOf, isCompanyUnlocked, isTopicUnlocked, doneKey } from '../lib/progress.js'
+import { statsOf, levelOf, isCompanyUnlocked, isTopicUnlocked, doneKey, sessionLabel } from '../lib/progress.js'
 import { greeting, givenName, daysUntil, fromNow, fmtShort, score1 } from '../lib/format.js'
 
 const CRIT_TIPS = {
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                   <Link to={`/history/${h.id}`} className="recent-item">
                     <span className={`score-pill tone-${tone(h.avg)}`}>{score1(h.avg)}</span>
                     <span className="recent-text">
-                      <strong>{COMPANIES.find((c) => c.id === h.companyId)?.name} · Chủ đề {h.topicId}</strong>
+                      <strong>{sessionLabel(h).title}</strong>
                       <small>{fromNow(h.at)} · {PERSONAS[h.personaId]?.name}{h.sample ? ' · Buổi mẫu' : ''}</small>
                     </span>
                     <Meter value={h.avg} />

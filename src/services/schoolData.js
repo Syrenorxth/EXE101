@@ -3,7 +3,7 @@
 //   để mỗi lần mở đều giống nhau. Bản thật sẽ lấy từ máy chủ theo mã lớp.
 // - pilotMetrics(): chỉ số thử nghiệm MVP tính từ dữ liệu THẬT trên trình duyệt này.
 import { TOPICS } from '../data/content.js'
-import { loadProgress, doneKey } from '../lib/progress.js'
+import { loadProgress, groupKey } from '../lib/progress.js'
 import { listUsers } from './auth.js'
 import { storage, newId } from './storage.js'
 
@@ -102,7 +102,7 @@ export function pilotMetrics() {
     if (real.length >= 1) active += 1
     if (real.length >= 2) returning += 1
     const groups = {}
-    for (const h of [...real].reverse()) (groups[doneKey(h.companyId, h.topicId)] ||= []).push(h.avg)
+    for (const h of [...real].reverse()) (groups[groupKey(h)] ||= []).push(h.avg)
     Object.values(groups).forEach((g) => { if (g.length >= 2) gains.push(g[1] - g[0]) })
     real.forEach((h) => { if (h.survey) surveys.push(h.survey) })
   }

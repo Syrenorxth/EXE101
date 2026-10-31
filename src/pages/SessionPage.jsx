@@ -5,8 +5,8 @@ import { EmptyState } from '../components/Feedback.jsx'
 import Icon from '../components/Icons.jsx'
 import { Link, navigate } from '../router.jsx'
 import { useApp } from '../context/AppContext.jsx'
-import { COMPANIES, PERSONAS, TOPICS } from '../data/content.js'
-import { saveSurvey } from '../lib/progress.js'
+import { PERSONAS } from '../data/content.js'
+import { saveSurvey, sessionLabel, isCvSession, groupKey } from '../lib/progress.js'
 import { fmtDateTime } from '../lib/format.js'
 
 export default function SessionPage({ id }) {
@@ -25,14 +25,14 @@ export default function SessionPage({ id }) {
     )
   }
 
-  const company = COMPANIES.find((c) => c.id === entry.companyId)
-  const topic = TOPICS.find((t) => t.id === entry.topicId)
-  const older = progress.history.slice(progress.history.indexOf(entry) + 1).find((h) => h.companyId === entry.companyId && h.topicId === entry.topicId)
+  const label = sessionLabel(entry)
+  const cv = isCvSession(entry)
+  const older = progress.history.slice(progress.history.indexOf(entry) + 1).find((h) => groupKey(h) === groupKey(entry))
 
   return (
     <AppShell
-      title={`${company?.name} · Chủ đề ${entry.topicId}`}
-      subtitle={`${fmtDateTime(entry.at)} · ${topic?.name} · ${PERSONAS[entry.personaId]?.name}${entry.sample ? ' · Buổi mẫu' : ''}`}
+      title={label.title}
+      subtitle={`${fmtDateTime(entry.at)} · ${label.topicName} · ${PERSONAS[entry.personaId]?.name}${entry.sample ? ' · Buổi mẫu' : ''}`}
       actions={<Link to="/history" className="btn btn-ghost small hide-xs"><Icon name="arrowLeft" size={16} /> Lịch sử</Link>}
     >
       <FeedbackScreen
@@ -41,7 +41,8 @@ export default function SessionPage({ id }) {
         setup={{ language: entry.language || 'en', topicId: entry.topicId }}
         survey={entry.survey}
         onSurvey={entry.sample ? null : (s) => { setProgress((p) => saveSurvey(p, entry.id, s)); toast('Cảm ơn bạn đã góp ý!', 'success') }}
-        onRetry={() => navigate(`/practice?company=${entry.companyId}&topic=${entry.topicId}`)}
+        retryLabel={cv ? 'Phỏng vấn lại với CV & JD này' : undefined}
+        onRetry={() => navigate(cv ? `/cv-interview?from=${entry.id}` : `/practice?company=${entry.companyId}&topic=${entry.topicId}`)}
         onHistory={() => navigate('/history')}
       />
     </AppShell>

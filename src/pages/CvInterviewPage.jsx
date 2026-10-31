@@ -13,6 +13,9 @@ import { AI_ENABLED } from '../lib/aiEngine.js'
 import { TTS_SUPPORTED } from '../lib/speech.js'
 import { analyzeCvJd, readFileText, ACCEPT, MAX_FILE_MB, MIN_CHARS } from '../lib/cvJd.js'
 import { DEFAULT_PREFS } from '../services/auth.js'
+import { newId } from '../services/storage.js'
+import { recordSession, pointsFor, markStarted, saveSurvey, groupKey } from '../lib/progress.js'
+import { awardBadges } from '../lib/achievements.js'
 
 const TITLES = {
   input: ['Phỏng vấn theo CV & JD', 'Gửi CV và mô tả công việc, AI sẽ tạo buổi phỏng vấn riêng cho bạn'],
@@ -88,16 +91,31 @@ function MatchBar({ value }) {
   )
 }
 
-export default function CvInterviewPage() {
-  const { user, toast } = useApp()
+export default function CvInterviewPage({ from }) {
+  const { user, progress, setProgress, toast } = useApp()
   const prefs = { ...DEFAULT_PREFS, ...user.prefs }
-  const [screen, setScreen] = useState('input')
-  const [cv, setCv] = useState('')
-  const [jd, setJd] = useState('')
+  const setupOf = (a) => {
+    const career = careerById(a.careerId)
+    return {
+      custom: a,
+      careerId: career.id,
+      position: a.level,
+      personaId: career.specialist,
+      language: prefs.language,
+      timeChallenge: prefs.timeChallenge,
+      voice: prefs.voice,
+      mode: AI_ENABLED ? 'ai' : 'demo'
+    }
+  }
+  // Mở lại từ lịch sử (?from=<id>): dùng lại kết quả quét đã lưu, vào thẳng bước kiểm tra.
+  const saved = progress.history.find((h) => h.id === from && h.custom)?.custom
+  const [screen, setScreen] = useState(saved ? 'review' : 'input')
+  const [cv, setCv] = useState(saved?.cvText || '')
+  const [jd, setJd] = useState(saved?.jdText || '')
   const [busy, setBusy] = useState(false)
-  const [analysis, setAnalysis] = useState(null)
+  const [analysis, setAnalysis] = useState(saved || null)
   const [showQuestions, setShowQuestions] = useState(false)
-  const [setup, setSetup] = useState(null)
+  const [setup, setSetup] = useState(saved ? setupOf(saved) : null)
   const [result, setResult] = useState(null)
   const [sessionKey, setSessionKey] = useState(0)
 
@@ -113,19 +131,9 @@ export default function CvInterviewPage() {
     try {
       const { analysis: a, warning } = await analyzeCvJd({ cv, jd, fallbackCareer: user.career, fallbackLevel: user.position })
       if (warning) toast(warning, 'warn')
-      const career = careerById(a.careerId)
       setAnalysis(a)
       setShowQuestions(false)
-      setSetup({
-        custom: a,
-        careerId: career.id,
-        position: a.level,
-        personaId: career.specialist,
-        language: prefs.language,
-        timeChallenge: prefs.timeChallenge,
-        voice: prefs.voice,
-        mode: AI_ENABLED ? 'ai' : 'demo'
-      })
+      setSetup(setupOf(a))
       go('review')
     } finally {
       setBusy(false)
@@ -133,8 +141,47 @@ export default function CvInterviewPage() {
   }
 
   const start = () => {
+    setProgress(markStarted)
     setSessionKey((k) => k + 1)
     go('interview')
+  }
+
+  // Lưu vào lịch sử và cộng điểm rèn luyện giống buổi luyện theo lộ trình.
+  const finish = (evaluation) => {
+    const a = setup.custom
+    const earned = pointsFor(evaluation.overall.avg, setup.timeChallenge)
+    const id = newId()
+    const cvInfo = { role: a.role, company: a.company, careerId: a.careerId, level: a.level, match: a.match }
+    const previous = progress.history.find((h) => groupKey(h) === groupKey({ kind: 'cv', cv: cvInfo }))
+    const recorded = recordSession(progress, {
+      id,
+      kind: 'cv',
+      cv: cvInfo,
+      custom: a,
+      careerId: setup.careerId,
+      position: setup.position,
+      personaId: setup.personaId,
+      language: setup.language,
+      timeChallenge: setup.timeChallenge,
+      spoken: evaluation.answers.some((x) => x.spoken),
+      mode: evaluation.mode,
+      avg: evaluation.overall.avg,
+      earned,
+      result: evaluation
+    })
+    const { progress: after, newly } = awardBadges(recorded)
+    setProgress(after)
+    newly.forEach((b) => toast(`Huy hiệu mới: ${b.name}`, 'badge'))
+    setResult({
+      ...evaluation,
+      id,
+      earned,
+      pointsBefore: progress.points,
+      pointsAfter: after.points,
+      previousAvg: previous?.avg,
+      newBadges: newly
+    })
+    go('feedback')
   }
 
   const [title, subtitle] = TITLES[screen]
@@ -287,7 +334,7 @@ export default function CvInterviewPage() {
             <button className="btn btn-primary block" onClick={start}>
               <Icon name="mic" size={16} /> Bắt đầu phỏng vấn
             </button>
-            <p className="fine">Buổi phỏng vấn theo CV & JD dùng để luyện tập, chưa được tính vào lịch sử và điểm rèn luyện.</p>
+            <p className="fine">Kết quả được lưu vào lịch sử và cộng điểm rèn luyện như buổi luyện thường.</p>
           </aside>
         </section>
       )}
@@ -296,7 +343,7 @@ export default function CvInterviewPage() {
         <InterviewScreen
           key={sessionKey}
           setup={setup}
-          onFinish={(evaluation) => { setResult(evaluation); go('feedback') }}
+          onFinish={finish}
           onExit={() => go('review')}
           onSwitchToDemo={() => { update({ mode: 'demo' }); setSessionKey((k) => k + 1) }}
         />
@@ -308,7 +355,10 @@ export default function CvInterviewPage() {
           setup={setup}
           readOnly
           retryLabel="Phỏng vấn lại"
+          survey={progress.history.find((h) => h.id === result.id)?.survey}
+          onSurvey={(s) => { setProgress((p) => saveSurvey(p, result.id, s)); toast('Cảm ơn bạn đã góp ý!', 'success') }}
           onRetry={start}
+          onHistory={() => navigate('/history')}
           extraActions={<button className="btn btn-ghost" onClick={() => go('input')}>Thử CV hoặc JD khác</button>}
         />
       )}

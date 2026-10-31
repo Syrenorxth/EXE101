@@ -1,12 +1,12 @@
 // Huy hiệu: thưởng cho những thói quen luyện tập tốt, xét lại sau mỗi buổi.
 import { COMPANIES, TOPICS } from '../data/content.js'
-import { doneKey, streakOf } from './progress.js'
+import { doneKey, groupKey, streakOf } from './progress.js'
 
-// Có chủ đề nào mà lần gần nhất cao hơn lần đầu ít nhất 1 điểm không.
+// Có bài nào (chủ đề hoặc vị trí theo CV & JD) mà lần gần nhất cao hơn lần đầu ít nhất 1 điểm không.
 function improved(p) {
   const groups = {}
   for (const h of [...p.history].reverse()) {
-    const k = doneKey(h.companyId, h.topicId)
+    const k = groupKey(h)
     ;(groups[k] ||= []).push(h.avg)
   }
   return Object.values(groups).some((g) => g.length >= 2 && g[g.length - 1] - g[0] >= 1)

@@ -2,6 +2,7 @@
 // Các hàm bên dưới đều là hàm thuần (nhận tiến độ cũ, trả về tiến độ mới),
 // nên khi chuyển sang máy chủ thật chỉ cần thay loadProgress/saveProgress.
 import { storage } from '../services/storage.js'
+import { COMPANIES, TOPICS } from '../data/content.js'
 
 const keyOf = (userId) => `palspeak:progress:${userId}`
 
@@ -26,6 +27,23 @@ export function resetProgress() {
 }
 
 export const doneKey = (companyId, topicId) => `${companyId}:${topicId}`
+
+// Buổi phỏng vấn theo CV & JD không gắn với doanh nghiệp và chủ đề trong lộ trình.
+export const isCvSession = (h) => h.kind === 'cv'
+
+// Gom các lần luyện cùng một bài: cùng doanh nghiệp + chủ đề, hoặc cùng vị trí trong JD.
+export const groupKey = (h) => (isCvSession(h) ? `cv:${h.cv.company}:${h.cv.role}` : doneKey(h.companyId, h.topicId))
+
+// Tên hiển thị của một buổi trong lịch sử.
+export function sessionLabel(h) {
+  if (isCvSession(h)) {
+    const company = h.cv.company || 'Nhà tuyển dụng'
+    return { company, topic: `CV & JD · ${h.cv.role}`, title: `${company} · ${h.cv.role}`, topicName: 'Phỏng vấn theo CV & JD' }
+  }
+  const company = COMPANIES.find((c) => c.id === h.companyId)?.name || h.companyId
+  const topicName = TOPICS.find((t) => t.id === h.topicId)?.name || ''
+  return { company, topic: `${h.topicId}. ${topicName}`, title: `${company} · Chủ đề ${h.topicId}`, topicName }
+}
 
 export function isCompanyUnlocked(p, company) {
   return p.presenter || p.points >= company.unlockPoints
@@ -55,13 +73,13 @@ export function markStarted(p) {
 }
 
 // s gồm id, thông tin buổi phỏng vấn và result (kết quả chấm đầy đủ để xem lại).
+// Buổi theo CV & JD vẫn được cộng điểm nhưng không tính là đã qua chủ đề nào trong lộ trình.
 export function recordSession(p, s) {
   const key = doneKey(s.companyId, s.topicId)
-  const best = Math.max(p.done[key] ?? 0, s.avg)
   return {
     ...p,
     points: p.points + s.earned,
-    done: { ...p.done, [key]: best },
+    done: isCvSession(s) ? p.done : { ...p.done, [key]: Math.max(p.done[key] ?? 0, s.avg) },
     history: [{ at: new Date().toISOString(), ...s }, ...p.history].slice(0, 50)
   }
 }
