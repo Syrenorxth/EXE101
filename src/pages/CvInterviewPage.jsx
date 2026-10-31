@@ -157,7 +157,8 @@ export default function CvInterviewPage({ from }) {
       id,
       kind: 'cv',
       cv: cvInfo,
-      custom: a,
+      // Chỉ giữ kết quả quét và câu hỏi để phỏng vấn lại, không lưu nội dung CV/JD
+      custom: { ...a, cvText: '', jdText: '' },
       careerId: setup.careerId,
       position: setup.position,
       personaId: setup.personaId,
