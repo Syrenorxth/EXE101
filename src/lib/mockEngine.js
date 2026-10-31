@@ -58,7 +58,7 @@ export function buildPlan(topicId, careerId) {
 }
 
 export function createMockSession(ctx) {
-  const plan = buildPlan(ctx.topicId, ctx.careerId || careerOf(ctx.companyId))
+  const plan = ctx.custom ? ctx.custom.plan : buildPlan(ctx.topicId, ctx.careerId || careerOf(ctx.companyId))
   return { ctx, plan, index: 0, followUpAsked: false, reverseAsked: false, reverse: null, answers: plan.map(() => []) }
 }
 
@@ -309,8 +309,9 @@ export function mockEvaluate(session) {
     const text = parts.map((p) => p.text).join(' ')
     const timedOut = parts.some((p) => p.timedOut)
     const spoken = parts.some((p) => p.spoken)
-    const companyName = COMPANIES.find((c) => c.id === session.ctx.companyId)?.name || ''
-    const model = modelAnswerFor(q.id, session.ctx.careerId || careerOf(session.ctx.companyId), lang, companyName)
+    const companyName = session.ctx.custom?.company || COMPANIES.find((c) => c.id === session.ctx.companyId)?.name || ''
+    // Câu hỏi tạo từ CV và JD không có trong ngân hàng câu hỏi nên mang theo câu trả lời mẫu riêng.
+    const model = q.model ? q.model[lang] : modelAnswerFor(q.id, session.ctx.careerId || careerOf(session.ctx.companyId), lang, companyName)
     return {
       question: q[lang],
       answer: text,

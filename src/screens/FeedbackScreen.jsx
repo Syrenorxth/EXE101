@@ -97,7 +97,7 @@ function Survey({ survey, onSubmit }) {
   )
 }
 
-export default function FeedbackScreen({ result, setup, survey, onSurvey, onRetry, onNextTopic, onRoadmap, onHistory, readOnly = false }) {
+export default function FeedbackScreen({ result, setup, survey, onSurvey, onRetry, onNextTopic, onRoadmap, onHistory, readOnly = false, retryLabel = 'Luyện lại chủ đề này', extraActions = null }) {
   const [open, setOpen] = useState(0)
   const [playing, setPlaying] = useState(null)
   const { overall } = result
@@ -256,8 +256,9 @@ export default function FeedbackScreen({ result, setup, survey, onSurvey, onRetr
       {onSurvey && <Survey survey={survey} onSubmit={onSurvey} />}
 
       <div className="actions">
-        <button className="btn btn-accent" onClick={onRetry}><Icon name="refresh" size={16} /> Luyện lại chủ đề này</button>
+        <button className="btn btn-accent" onClick={onRetry}><Icon name="refresh" size={16} /> {retryLabel}</button>
         {!readOnly && setup.topicId < 3 && <button className="btn btn-primary" onClick={onNextTopic}>Sang chủ đề {setup.topicId + 1} <Icon name="arrowRight" size={16} /></button>}
+        {extraActions}
         {onRoadmap && <button className="btn btn-ghost" onClick={onRoadmap}>Về lộ trình</button>}
         {onHistory && <button className="btn btn-ghost" onClick={onHistory}>Xem lịch sử</button>}
       </div>

@@ -7,6 +7,7 @@ import AuthPage from './pages/AuthPage.jsx'
 import OnboardingPage from './pages/OnboardingPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import PracticePage from './pages/PracticePage.jsx'
+import CvInterviewPage from './pages/CvInterviewPage.jsx'
 import HistoryPage from './pages/HistoryPage.jsx'
 import SessionPage from './pages/SessionPage.jsx'
 import LibraryPage from './pages/LibraryPage.jsx'
@@ -53,6 +54,7 @@ function Routes() {
     case 'onboarding': return <OnboardingPage />
     case 'dashboard': return user.role === 'school' ? <Redirect to="/school" /> : <DashboardPage />
     case 'practice': return <PracticePage key={search} query={query} />
+    case 'cv-interview': return <CvInterviewPage />
     case 'history': return second ? <SessionPage id={second} /> : <HistoryPage />
     case 'library': return <LibraryPage tab={query.tab} />
     case 'achievements': return <AchievementsPage />

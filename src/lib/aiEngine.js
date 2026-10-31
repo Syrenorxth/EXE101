@@ -11,7 +11,7 @@ const SITUATION = '[TÌNH HUỐNG]'
 const REVERSE = '[HỎI LẠI]'
 const MAX_TURNS = 12
 
-async function chat(messages, temperature = 0.7) {
+export async function chat(messages, temperature = 0.7) {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -27,11 +27,34 @@ async function chat(messages, temperature = 0.7) {
   return text.trim()
 }
 
+// Phần giới thiệu bối cảnh: buổi theo lộ trình (doanh nghiệp mô phỏng + chủ đề)
+// hoặc buổi tạo từ CV và JD của chính sinh viên (ctx.custom, xem lib/cvJd.js).
+function contextLines(ctx) {
+  const career = careerById(ctx.careerId || careerOf(ctx.companyId))
+  if (ctx.custom) {
+    const c = ctx.custom
+    return `Doanh nghiệp: ${c.company || 'doanh nghiệp đăng tin tuyển dụng (JD) bên dưới'}.
+Ngành: ${career.name}.
+Vị trí ứng tuyển: ${c.role} (cấp độ ${c.level}).
+Buổi phỏng vấn được tạo từ CV của ứng viên và mô tả công việc (JD) họ tự gửi. Khi hỏi đào sâu, hãy bám vào chi tiết thật trong CV và yêu cầu trong JD.
+Tóm tắt JD: ${c.jdSummary}
+Tóm tắt CV: ${c.cvSummary}
+JD (trích):
+"""${c.jdText}"""
+CV (trích):
+"""${c.cvText}"""`
+  }
+  const topic = TOPICS.find((t) => t.id === ctx.topicId)
+  const company = COMPANIES.find((c) => c.id === ctx.companyId)
+  return `Doanh nghiệp: ${company.name} (${company.kind}, mức độ ${company.level}). ${company.desc}
+Ngành: ${career.name}.
+Vị trí ứng tuyển: ${ctx.position} (${POSITIONS[ctx.position]}).
+Chủ đề: ${topic.name}. Mục tiêu: ${topic.goal}`
+}
+
 function systemPrompt(ctx, plan) {
   const persona = PERSONAS[ctx.personaId]
   const topic = TOPICS.find((t) => t.id === ctx.topicId)
-  const company = COMPANIES.find((c) => c.id === ctx.companyId)
-  const career = careerById(ctx.careerId || careerOf(ctx.companyId))
   const lang = ctx.language === 'en' ? 'en' : 'vi'
   const language = lang === 'en'
     ? 'English'
@@ -42,10 +65,7 @@ function systemPrompt(ctx, plan) {
 
   return `Bạn đóng vai người phỏng vấn trong PalSpeak, nền tảng luyện phỏng vấn cho sinh viên Việt Nam ở nhiều ngành nghề.
 Vai của bạn: ${persona.name} – ${persona.role}. Phong cách: ${persona.trait}.
-Doanh nghiệp: ${company.name} (${company.kind}, mức độ ${company.level}). ${company.desc}
-Ngành: ${career.name}.
-Vị trí ứng tuyển: ${ctx.position} (${POSITIONS[ctx.position]}).
-Chủ đề: ${topic.name}. Mục tiêu: ${topic.goal}
+${contextLines(ctx)}
 Ngôn ngữ phỏng vấn: ${language}.
 
 Buổi phỏng vấn đi theo đúng trình tự của một buổi phỏng vấn thật. Hỏi ĐÚNG ${plan.length} câu hỏi chính sau, ĐÚNG thứ tự, không thêm câu chính khác, không đảo thứ tự:
@@ -56,7 +76,7 @@ Quy tắc:
 2. Lượt đầu tiên: chào ngắn theo đúng phong cách của vai, rồi hỏi câu chính thứ nhất.
 3. Khi chuyển sang câu chính tiếp theo: cảm ơn thật ngắn, nói câu chuyển ý (nếu có) rồi hỏi câu đó.
 4. Nếu câu trả lời mơ hồ, quá ngắn hoặc thiếu kết quả cụ thể, hỏi thêm tối đa MỘT câu đào sâu cho câu chính đó, bám vào chính điều ứng viên vừa nói.
-${topic.situationChange ? `5. Câu chính cuối cùng là tình huống thay đổi. Bắt đầu lượt đó bằng "${SITUATION}".` : '5. Không có tình huống thay đổi trong buổi này.'}
+${topic?.situationChange ? `5. Câu chính cuối cùng là tình huống thay đổi. Bắt đầu lượt đó bằng "${SITUATION}".` : '5. Không có tình huống thay đổi trong buổi này.'}
 6. Không nhận xét, không chấm điểm, không gợi ý đáp án trong lúc phỏng vấn.
 7. Khi ứng viên đã trả lời xong câu chính cuối cùng (và câu đào sâu nếu có), bắt đầu lượt bằng "${REVERSE}" rồi hỏi đúng ý: "${REVERSE_QUESTION[lang]}"
 8. Sau khi ứng viên trả lời lượt đó: nếu họ có hỏi thì trả lời ngắn gọn 1–2 câu theo vai, cảm ơn và kết thúc bằng đúng chuỗi "${END}".
@@ -84,7 +104,7 @@ function toMessage(raw) {
 }
 
 export function createAiSession(ctx) {
-  const plan = buildPlan(ctx.topicId, ctx.careerId || careerOf(ctx.companyId))
+  const plan = ctx.custom ? ctx.custom.plan : buildPlan(ctx.topicId, ctx.careerId || careerOf(ctx.companyId))
   return {
     ctx,
     plan,
@@ -130,7 +150,7 @@ export async function aiReply(session, answer, timedOut, spoken = false) {
   return { done, messages: [message] }
 }
 
-function parseJson(text) {
+export function parseJson(text) {
   const cleaned = text.replace(/```json|```/g, '')
   const start = cleaned.indexOf('{')
   const end = cleaned.lastIndexOf('}')
@@ -142,13 +162,14 @@ const score = (n) => Math.max(1, Math.min(10, Math.round(Number(n) || 1)))
 
 export async function aiEvaluate(session) {
   const { ctx } = session
-  const topic = TOPICS.find((t) => t.id === ctx.topicId)
-  const company = COMPANIES.find((c) => c.id === ctx.companyId)
   const career = careerById(ctx.careerId || careerOf(ctx.companyId))
   const transcript = session.transcript.map((l) => `${l.who}: ${l.text}`).join('\n')
+  const about = ctx.custom
+    ? `vị trí ${ctx.custom.role}${ctx.custom.company ? ` tại ${ctx.custom.company}` : ''}, được tạo từ CV và JD của ứng viên. Đối chiếu câu trả lời với yêu cầu trong JD: ${ctx.custom.jdSummary}`
+    : `vị trí ${ctx.position} tại ${COMPANIES.find((c) => c.id === ctx.companyId).name}, chủ đề "${TOPICS.find((t) => t.id === ctx.topicId).name}".`
 
   const prompt = `Bạn là chuyên gia đánh giá phỏng vấn tuyển dụng ngành ${career.name} tại Việt Nam.
-Dưới đây là bản ghi buổi phỏng vấn vị trí ${ctx.position} tại ${company.name}, chủ đề "${topic.name}".
+Dưới đây là bản ghi buổi phỏng vấn ${about}
 Chấm từng câu hỏi chính (gộp cả câu trả lời cho câu đào sâu của nó) theo 3 tiêu chí, thang 1–10:
 - relevance: đúng trọng tâm câu hỏi
 - clarity: diễn đạt rõ ràng, độ dài hợp lý

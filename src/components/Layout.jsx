@@ -130,6 +130,14 @@ export function AppShell({ title, subtitle, actions, focus = false, children }) 
         </header>
         <main className="page" id="main">{children}</main>
       </div>
+
+      {/* Nút nổi góc phải: tạo buổi phỏng vấn từ CV và JD của chính sinh viên */}
+      {user.role === 'student' && !focus && path !== '/cv-interview' && (
+        <Link to="/cv-interview" className="cv-fab" title="Gửi CV và JD, AI tạo buổi phỏng vấn riêng cho bạn">
+          <Icon name="file" size={20} />
+          <span>Phỏng vấn theo CV & JD</span>
+        </Link>
+      )}
     </div>
   )
 }

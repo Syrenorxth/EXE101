@@ -43,9 +43,11 @@ const TIPS = {
 }
 
 export default function InterviewScreen({ setup, onFinish, onExit, onSwitchToDemo }) {
-  const company = COMPANIES.find((c) => c.id === setup.companyId)
+  // Buổi tạo từ CV và JD (setup.custom) không gắn với doanh nghiệp mô phỏng hay chủ đề nào.
+  const company = setup.custom ? { name: setup.custom.company || 'Nhà tuyển dụng' } : COMPANIES.find((c) => c.id === setup.companyId)
   const persona = PERSONAS[setup.personaId]
   const topic = TOPICS.find((t) => t.id === setup.topicId)
+  const sessionLabel = setup.custom ? `${setup.custom.role} · Theo CV & JD` : `${setup.position} · Chủ đề ${topic.id}: ${topic.name}`
 
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -216,7 +218,7 @@ export default function InterviewScreen({ setup, onFinish, onExit, onSwitchToDem
         <div className="room-title">
           <span className="live-dot" />
           <strong>{company.name}</strong>
-          <span className="muted">· {setup.position} · Chủ đề {topic.id}: {topic.name}</span>
+          <span className="muted">· {sessionLabel}</span>
         </div>
         <div className="room-top-right">
           <span className="chip-static"><Icon name="globe" size={14} /> {setup.language === 'vi' ? 'Tiếng Việt' : 'English'}</span>
